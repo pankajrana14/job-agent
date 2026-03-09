@@ -2,9 +2,9 @@
 
 **AI-powered job-search automation for the German market**
 
-Scrapes LinkedIn, StepStone, and BA Jobbörse on a schedule, evaluates every
-posting against your candidate profile using an LLM, deduplicates results,
-and delivers a structured digest email — all configurable through a desktop GUI.
+Scrapes LinkedIn, StepStone, and BA Jobbörse, evaluates every posting against
+your candidate profile using an LLM, deduplicates results, and delivers a
+structured digest email — all configurable through a desktop GUI.
 
 <table>
   <tr>
@@ -60,7 +60,7 @@ uv run gui.py                # open the desktop GUI
 Or with plain pip:
 
 ```bash
-python -m venv .venv && .venv\Scripts\activate
+python -m venv .venv && .venv/Scripts/activate
 pip install -r requirements.txt
 playwright install chromium
 ```
@@ -110,7 +110,9 @@ job-agent/
 ├── .env.example            # Credential template (copy to .env)
 ├── pyproject.toml          # Dependencies (uv / pip)
 └── docs/
-    └── screenshot.png
+    ├── screenshot.png
+    ├── screenshot_credentials.png
+    └── screenshot_run.png
 ```
 
 ---
