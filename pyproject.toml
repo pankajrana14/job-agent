@@ -1,0 +1,20 @@
+[project]
+name = "job-agent"
+version = "1.0.0"
+description = "AI-powered job-search automation for the German market with a PySide6 desktop GUI"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "playwright==1.44.0",
+    "litellm>=1.40.0",
+    "python-dotenv==1.0.1",
+    "PySide6>=6.6.0",
+    "qt-material>=2.14",
+]
+
+[project.urls]
+Repository = "https://github.com/yourusername/job-agent"
+
+[tool.uv]
+dev-dependencies = []

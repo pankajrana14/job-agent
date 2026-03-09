@@ -1,0 +1,18 @@
+# Job-Search Automation – Python dependencies
+# Install with: pip install -r requirements.txt
+# After installing, run: playwright install chromium
+
+# Web scraping
+playwright==1.44.0
+
+# LLM evaluation (replaces keyword filters with AI reasoning)
+litellm>=1.40.0
+
+# Environment variable management
+python-dotenv==1.0.1
+
+# Desktop GUI
+PySide6>=6.6.0
+qt-material>=2.14
+
+# (No other third-party deps needed – stdlib covers SMTP, JSON, logging, re, hashlib)
