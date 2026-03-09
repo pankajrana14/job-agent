@@ -63,6 +63,8 @@ Or with plain pip:
 python -m venv .venv && .venv/Scripts/activate
 pip install -r requirements.txt
 playwright install chromium
+cp .env.example .env         # fill in your credentials
+python gui.py                # open the desktop GUI
 ```
 
 ---
