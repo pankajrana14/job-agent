@@ -18,6 +18,7 @@ from config import (
     MAX_DELAY,
     MAX_POSTING_AGE_HOURS,
     MIN_DELAY,
+    SEARCH_COUNTRY,
 )
 
 # ---------------------------------------------------------------------------
@@ -205,14 +206,41 @@ def is_relevant_title(title: str) -> bool:
 
 
 def is_germany_location(location_text: str) -> bool:
+    """Return True if the location string indicates a German context via city keywords or country identifiers."""
+    norm = _normalise(location_text)
+    return any(kw in norm for kw in GERMANY_CITY_KEYWORDS)
+
+
+def is_target_location(location_text: str) -> bool:
     """
-    Return True if the location string refers to Germany
-    (including remote positions tied to German companies/cities).
+    Return True if the location string matches the configured SEARCH_COUNTRY.
+
+    For Germany the detailed city-keyword list is used (high precision).
+    For other countries we accept if the country name appears in the string,
+    or if the listing is marked remote/hybrid (the scraper URL already scopes
+    results to the right country, so we err on the side of inclusion).
     """
     norm = _normalise(location_text)
-    for kw in GERMANY_CITY_KEYWORDS:
-        if kw in norm:
-            return True
+    if SEARCH_COUNTRY.lower() == "germany":
+        return is_germany_location(location_text)
+    country_norm = SEARCH_COUNTRY.lower()
+    # Accept if the country name appears as a complete phrase. For multi-word
+    # country names we allow flexible separators (whitespace / punctuation)
+    # between words while still anchoring the phrase with word boundaries at
+    # both ends to avoid false positives like "Austria" matching "Australia".
+    country_tokens = re.split(r"\s+", country_norm.strip())
+    if len(country_tokens) == 1:
+        country_pattern = rf"\b{re.escape(country_tokens[0])}\b"
+    else:
+        joined = r"\W+".join(re.escape(tok) for tok in country_tokens)
+        country_pattern = rf"\b{joined}\b"
+    if re.search(country_pattern, norm):
+        return True
+    if "remote" in norm or "hybrid" in norm:
+        return True
+    # If location field is empty, give benefit of the doubt
+    if not norm.strip():
+        return True
     return False
 
 

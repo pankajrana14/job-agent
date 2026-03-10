@@ -14,6 +14,7 @@ datePosted=1 → posted in the last 24 hours
 
 import logging
 import urllib.parse
+from typing import Optional
 
 from playwright.sync_api import Browser, Page, sync_playwright, TimeoutError as PWTimeoutError
 
@@ -24,6 +25,8 @@ from config import (
     MAX_RETRIES,
     MIN_DELAY,
     PAGE_TIMEOUT,
+    SEARCH_COUNTRY,
+    STEPSTONE_COUNTRY_DOMAINS,
     STEPSTONE_SEARCH_QUERIES,
 )
 from utils import (
@@ -37,7 +40,20 @@ from utils import (
 
 logger = logging.getLogger("job_agent")
 
-_BASE_URL = "https://www.stepstone.de/jobs/{query}/in-deutschland?sort=2&datePosted=1&page={page}"
+_BASE_URL = "https://{domain}/jobs/{query}/{location_path}?sort=2&datePosted=1&page={page}"
+
+
+def _get_stepstone_domain() -> Optional[tuple[str, str]]:
+    """Return (domain, location_path) for SEARCH_COUNTRY, or None if unsupported."""
+    entry = STEPSTONE_COUNTRY_DOMAINS.get(SEARCH_COUNTRY)
+    if entry is None:
+        logger.warning(
+            "StepStone: country '%s' is not supported. "
+            "Supported: %s. Skipping StepStone scrape.",
+            SEARCH_COUNTRY,
+            ", ".join(STEPSTONE_COUNTRY_DOMAINS),
+        )
+    return entry
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +98,7 @@ def _accept_cookies(page: Page) -> None:
 # Job-card extraction
 # ---------------------------------------------------------------------------
 
-def _extract_job_cards(page: Page) -> list[dict]:
+def _extract_job_cards(page: Page, domain: str) -> list[dict]:
     jobs: list[dict] = []
 
     # StepStone renders job cards as <article> elements
@@ -117,7 +133,7 @@ def _extract_job_cards(page: Page) -> list[dict]:
                 "[data-at='job-item-location'], "
                 "span[class*='location']"
             )
-            location = location_el.inner_text().strip() if location_el else "Germany"
+            location = location_el.inner_text().strip() if location_el else ""
 
             # URL – StepStone card links
             link_el = card.query_selector("a[href*='/stellenangebot/'], a[href*='/job/']")
@@ -125,7 +141,7 @@ def _extract_job_cards(page: Page) -> list[dict]:
                 link_el = card.query_selector("a[data-at='job-item-title']")
             href = link_el.get_attribute("href") if link_el else ""
             if href and not href.startswith("http"):
-                href = "https://www.stepstone.de" + href
+                href = f"https://{domain}{href}"
 
             # Posting date (might be a <time> element or text)
             date_el = card.query_selector("time, [data-at='job-item-date']")
@@ -213,7 +229,7 @@ def _scrape_detail(page: Page, job: dict) -> dict:
 # Per-query scraper
 # ---------------------------------------------------------------------------
 
-def _scrape_query(browser: Browser, query: str) -> list[dict]:
+def _scrape_query(browser: Browser, query: str, domain: str, location_path: str) -> list[dict]:
     page = browser.new_page()
     page.set_extra_http_headers({"User-Agent": get_random_user_agent()})
     results: list[dict] = []
@@ -225,7 +241,12 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
             if limit_reached:
                 break
             encoded = urllib.parse.quote(query)
-            url = _BASE_URL.format(query=encoded, page=page_num)
+            url = _BASE_URL.format(
+                domain=domain,
+                query=encoded,
+                location_path=location_path,
+                page=page_num,
+            )
             logger.info("StepStone | query='%s' | page %d", query, page_num)
 
             if not _navigate_with_retry(page, url):
@@ -237,7 +258,7 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
 
             random_delay(MIN_DELAY, MAX_DELAY)
 
-            cards = _extract_job_cards(page)
+            cards = _extract_job_cards(page, domain)
             if not cards:
                 logger.info("StepStone: no cards on page %d for '%s'.", page_num, query)
                 break
@@ -288,6 +309,11 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def scrape_stepstone() -> list[dict]:
+    stepstone_entry = _get_stepstone_domain()
+    if stepstone_entry is None:
+        return []
+    domain, location_path = stepstone_entry
+
     all_jobs: list[dict] = []
     seen_ids: set[str] = set()
 
@@ -300,7 +326,7 @@ def scrape_stepstone() -> list[dict]:
             for query in STEPSTONE_SEARCH_QUERIES:
                 logger.info("=== StepStone scrape: %s ===", query)
                 try:
-                    jobs = _scrape_query(browser, query)
+                    jobs = _scrape_query(browser, query, domain, location_path)
                     for job in jobs:
                         jid = job.get("job_id", "")
                         if jid and jid not in seen_ids:

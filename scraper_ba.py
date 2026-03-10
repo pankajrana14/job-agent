@@ -29,6 +29,7 @@ from config import (
     MAX_PAGES_PER_QUERY,
     MAX_RETRIES,
     MIN_DELAY,
+    SEARCH_COUNTRY,
 )
 from utils import (
     extract_summary,
@@ -252,6 +253,14 @@ def _scrape_query(query: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def scrape_ba() -> list[dict]:
+    if SEARCH_COUNTRY.lower() != "germany":
+        logger.info(
+            "BA Jobbörse only supports Germany. "
+            "Current SEARCH_COUNTRY='%s' — skipping BA scrape.",
+            SEARCH_COUNTRY,
+        )
+        return []
+
     all_jobs: list[dict] = []
     seen_ids: set[str] = set()
 

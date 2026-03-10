@@ -49,6 +49,27 @@ TARGET_ROLES: list[str] = [
 ]
 
 # ---------------------------------------------------------------------------
+# Search location
+# ---------------------------------------------------------------------------
+# Country name as it appears in LinkedIn's location param; use the full,
+# human-readable country name, matching the keys in STEPSTONE_COUNTRY_DOMAINS.
+# Examples of valid values: "Germany", "United Kingdom" (not "UK"),
+# "Netherlands", "Austria", "Belgium".  StepStone and BA Jobbörse are mapped
+# separately below; BA only supports Germany.
+SEARCH_COUNTRY: str = "Germany"
+
+# StepStone country → (domain, in-path segment).
+# Countries not listed here will be skipped by the StepStone scraper.
+# URL path segments are based on StepStone's structure as of 2026-03 and may
+# need updating if the scraper stops returning results for a given country.
+STEPSTONE_COUNTRY_DOMAINS: dict[str, tuple[str, str]] = {
+    "Germany":     ("www.stepstone.de",  "in-deutschland"),
+    "Austria":     ("www.stepstone.at",  "in-oesterreich"),
+    "Belgium":     ("www.stepstone.be",  "in-belgien"),
+    "Netherlands": ("www.stepstone.nl",  "in-nederland"),
+}
+
+# ---------------------------------------------------------------------------
 # Location filters (lowercase)
 # ---------------------------------------------------------------------------
 LOCATION_KEYWORDS: list[str] = [

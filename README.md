@@ -1,6 +1,6 @@
 # Job Agent
 
-**AI-powered job-search automation for the German market**
+**AI-powered job-search automation — search any country from a desktop GUI**
 
 Scrapes LinkedIn, StepStone, and BA Jobbörse, evaluates every posting against
 your candidate profile using an LLM, deduplicates results, and delivers a
@@ -84,7 +84,8 @@ python gui.py                # open the desktop GUI
 
 ## Features
 
-- **Three platforms** — LinkedIn, StepStone.de, and BA Jobbörse (Germany's federal employment agency)
+- **Multi-country search** — set any country in the GUI; LinkedIn searches the specified country, StepStone switches to its national domain (Germany, Austria, Belgium, Netherlands), BA Jobbörse is auto-skipped for non-Germany searches
+- **Three platforms** — LinkedIn, StepStone, and BA Jobbörse (Germany's federal employment agency)
 - **AI match scoring** — jobs evaluated against a free-text candidate profile, not keyword lists; model and threshold are configurable
 - **Multi-model fallback** — primary model + ordered fallback list (e.g. GPT-4o → Claude Haiku → Gemini Flash) if rate-limited
 - **Duplicate prevention** — SHA-256 content hash; the same posting is never emailed twice even across platforms
@@ -144,6 +145,17 @@ Generate a Gmail App Password at [myaccount.google.com/apppasswords](https://mya
 Edit `PROFILE.md` with your background, skills, and preferences in plain English.
 The LLM reads this file verbatim when evaluating each job — the more specific you are,
 the better the filtering.
+
+### Search location (`config.py` or GUI → Configuration tab → Search Location)
+
+Set `SEARCH_COUNTRY` to any country name as recognised by LinkedIn's location filter
+(e.g. `"Germany"`, `"United Kingdom"`, `"Netherlands"`, `"India"`).
+
+| Platform | Country support |
+|---|---|
+| LinkedIn | Any country |
+| StepStone | Germany, Austria, Belgium, Netherlands |
+| BA Jobbörse | Germany only (skipped automatically for other countries) |
 
 ### Scraping parameters (`config.py` or GUI → Configuration tab)
 

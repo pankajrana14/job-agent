@@ -18,6 +18,7 @@ f_TPR=r86400 → posted in the last 24 hours (86 400 s)
 import logging
 import re
 import time
+import urllib.parse
 
 from playwright.sync_api import Page, Browser, sync_playwright, TimeoutError as PWTimeoutError
 
@@ -29,12 +30,13 @@ from config import (
     MAX_RETRIES,
     MIN_DELAY,
     PAGE_TIMEOUT,
+    SEARCH_COUNTRY,
 )
 from utils import (
     extract_summary,
     generate_job_id,
     get_random_user_agent,
-    is_germany_location,
+    is_target_location,
     is_posted_within_24h,
     is_relevant_title,
     random_delay,
@@ -44,7 +46,7 @@ logger = logging.getLogger("job_agent")
 
 _BASE_URL = (
     "https://www.linkedin.com/jobs/search/"
-    "?keywords={query}&location=Germany"
+    "?keywords={query}&location={location}"
     "&f_E=2%2C3"           # Entry Level + Associate
     "&f_TPR=r86400"         # Last 24 h
     "&start={offset}"
@@ -195,7 +197,11 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
             if limit_reached:
                 break
             offset = page_num * _JOBS_PER_PAGE
-            url = _BASE_URL.format(query=query.replace(" ", "%20"), offset=offset)
+            url = _BASE_URL.format(
+                query=urllib.parse.quote(query),
+                location=urllib.parse.quote(SEARCH_COUNTRY),
+                offset=offset,
+            )
             logger.info("LinkedIn | query='%s' | page %d | %s", query, page_num + 1, url)
 
             if not _navigate_with_retry(page, url):
@@ -218,7 +224,7 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
 
             # Filter by location before visiting detail pages
             location_filtered = [
-                j for j in cards if is_germany_location(j["location"])
+                j for j in cards if is_target_location(j["location"])
             ]
             logger.debug(
                 "%d / %d cards pass location filter.", len(location_filtered), len(cards)
