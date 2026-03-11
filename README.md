@@ -181,12 +181,16 @@ uv run main.py
 ```
 
 **Automated — Windows Task Scheduler** (twice daily at 08:00 and 18:00):
+
+1. Copy `run_job_agent.bat.example` to `run_job_agent.bat` and set `PROJECT_DIR` to your install path.
+2. Register the tasks:
 ```powershell
-$py = "$PWD\.venv\Scripts\python.exe"
-$script = "$PWD\main.py"
-schtasks /create /tn "JobAgentAM" /tr "`"$py`" `"$script`"" /sc daily /st 08:00 /f
-schtasks /create /tn "JobAgentPM" /tr "`"$py`" `"$script`"" /sc daily /st 18:00 /f
+$bat = "$PWD\run_job_agent.bat"
+schtasks /create /tn "JobAgentAM" /tr "`"$bat`"" /sc daily /st 08:00 /f
+schtasks /create /tn "JobAgentPM" /tr "`"$bat`"" /sc daily /st 18:00 /f
 ```
+
+The bat file activates the venv, runs `main.py`, and writes a date-stamped log to `logs/`.
 
 ---
 

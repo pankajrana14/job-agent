@@ -1,0 +1,26 @@
+@echo off
+setlocal
+
+:: ── Edit these two lines to match your setup ─────────────────────────────────
+set PROJECT_DIR=C:\path\to\job-agent
+set VENV_ACTIVATE=%PROJECT_DIR%\job_agent\Scripts\activate.bat
+:: ─────────────────────────────────────────────────────────────────────────────
+
+set LOG_DIR=%PROJECT_DIR%\logs
+for /f "usebackq" %%d in (`powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"`) do set TODAY=%%d
+set LOG_FILE=%LOG_DIR%\run_%TODAY%.log
+
+cd /d "%PROJECT_DIR%"
+call "%VENV_ACTIVATE%"
+
+echo ============================================================ >> "%LOG_FILE%"
+echo Run started: %DATE% %TIME% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+python main.py >> "%LOG_FILE%" 2>&1
+
+echo ============================================================ >> "%LOG_FILE%"
+echo Run finished: %DATE% %TIME% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+endlocal
