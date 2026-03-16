@@ -40,7 +40,7 @@ BA Jobbörse┘    headless Chromium       GPT-4o / Claude / Gemini   JSON datab
 3. **Deduplicate** — A SHA-256 hash of `(title, company, location)` prevents re-sending the same job.
 4. **Deliver** — Matched jobs above your threshold are bundled into a rich HTML email.
 
-The desktop GUI lets you configure everything without editing files.
+The desktop GUI lets you configure most settings without editing code.
 
 ---
 
@@ -53,7 +53,7 @@ git clone https://github.com/yourusername/job-agent
 cd job-agent
 uv sync                      # creates venv + installs all dependencies
 uv run playwright install chromium
-cp .env.example .env         # fill in your credentials
+copy .env.example .env       # on PowerShell/cmd; use cp on Git Bash
 uv run gui.py                # open the desktop GUI
 ```
 
@@ -63,7 +63,7 @@ Or with plain pip:
 python -m venv .venv && .venv/Scripts/activate
 pip install -r requirements.txt
 playwright install chromium
-cp .env.example .env         # fill in your credentials
+copy .env.example .env       # on PowerShell/cmd; use cp on Git Bash
 python gui.py                # open the desktop GUI
 ```
 
@@ -87,7 +87,7 @@ python gui.py                # open the desktop GUI
 - **Multi-country search** — set any country in the GUI; LinkedIn searches the specified country, StepStone switches to its national domain (Germany, Austria, Belgium, Netherlands), BA Jobbörse is auto-skipped for non-Germany searches
 - **Three platforms** — LinkedIn, StepStone, and BA Jobbörse (Germany's federal employment agency)
 - **AI match scoring** — jobs evaluated against a free-text candidate profile, not keyword lists; model and threshold are configurable
-- **Multi-model fallback** — primary model + ordered fallback list (e.g. GPT-4o → Claude Haiku → Gemini Flash) if rate-limited
+- **Multi-model fallback** — primary model + ordered fallback list (e.g. GPT-4o → Claude Haiku → Gemini Flash) when a model fails or returns unusable output
 - **Duplicate prevention** — SHA-256 content hash; the same posting is never emailed twice even across platforms
 - **Desktop GUI** — PySide6 app with sidebar navigation, Windows 11 Acrylic glass effect, and live pipeline output
 - **Scheduled runs** — integrates with Windows Task Scheduler for twice-daily automated execution

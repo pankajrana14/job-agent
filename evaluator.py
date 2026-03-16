@@ -23,6 +23,9 @@ from config import LLM_FALLBACK_MODELS, LLM_MATCH_THRESHOLD, LLM_MODEL
 
 logger = logging.getLogger("job_agent")
 
+# Let LiteLLM silently drop unsupported provider parameters instead of failing hard.
+litellm.drop_params = True
+
 # ---------------------------------------------------------------------------
 # Load candidate profile (read once at startup)
 # ---------------------------------------------------------------------------
@@ -98,6 +101,62 @@ _FALLBACK: EvalResult = {
     "reason": "Evaluation unavailable (API error).",
 }
 
+
+def _extract_json_object(raw: str) -> dict:
+    """
+    Parse a model response into JSON, tolerating markdown fences and extra text.
+    Raises json.JSONDecodeError if no valid JSON object can be found.
+    """
+    text = (raw or "").strip()
+    if not text:
+        raise json.JSONDecodeError("Empty response", text, 0)
+
+    # Fast path: response is already plain JSON.
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Common case: ```json { ... } ```
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if len(lines) >= 3:
+            text = "\n".join(lines[1:-1]).strip()
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                pass
+
+    # Last resort: extract the first JSON object substring.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        snippet = text[start:end + 1]
+        return json.loads(snippet)
+
+    raise json.JSONDecodeError("No JSON object found", text, 0)
+
+
+def _build_completion_params(model: str, user_message: str) -> dict:
+    """Build provider-safe completion params for the selected model."""
+    params = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "response_format": {"type": "json_object"},
+        "max_tokens": 500,
+    }
+
+    # gpt-5 family currently enforces temperature=1.
+    if model.lower().startswith("gpt-5"):
+        params["temperature"] = 1
+    else:
+        params["temperature"] = 0.1
+
+    return params
+
 # ---------------------------------------------------------------------------
 # Core evaluation call
 # ---------------------------------------------------------------------------
@@ -109,18 +168,9 @@ def _call_model(model: str, user_message: str) -> EvalResult:
     """
     for attempt in range(1, 3):  # 2 attempts per model
         try:
-            response = litellm.completion(
-                model=model,
-                messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_message},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.1,
-                max_tokens=500,
-            )
-            raw   = response.choices[0].message.content
-            data  = json.loads(raw)
+            response = litellm.completion(**_build_completion_params(model, user_message))
+            raw = response.choices[0].message.content
+            data = _extract_json_object(raw)
             score = max(1, min(10, int(data.get("score", 0))))
             return EvalResult(
                 match  = score >= LLM_MATCH_THRESHOLD,
@@ -174,7 +224,7 @@ def evaluate_job(job: dict) -> EvalResult:
             return result
         except json.JSONDecodeError as exc:
             logger.warning("Non-JSON response from '%s' for '%s': %s", model, title, exc)
-            return _FALLBACK   # bad JSON is not a provider issue – don't retry
+            continue
         except Exception as exc:
             logger.warning("Model '%s' failed for '%s': %s – trying next …", model, title, exc)
 
