@@ -107,6 +107,9 @@ GERMANY_CITY_KEYWORDS: list[str] = [
 # ---------------------------------------------------------------------------
 # Search queries per platform
 # ---------------------------------------------------------------------------
+# LinkedIn gets the country from SEARCH_COUNTRY via its location parameter.
+# Keep these as role/title keywords only; do not add "Germany", "Netherlands",
+# or other country names here.
 LINKEDIN_SEARCH_QUERIES: list[str] = [
     "AI Engineer",
     "Machine Learning Engineer",

@@ -54,6 +54,15 @@ _BASE_URL = (
 _JOBS_PER_PAGE = 25
 
 
+def _build_search_url(query: str, offset: int) -> str:
+    """Build a LinkedIn search URL with role keywords and separate country location."""
+    return _BASE_URL.format(
+        query=urllib.parse.quote(query),
+        location=urllib.parse.quote(SEARCH_COUNTRY),
+        offset=offset,
+    )
+
+
 def _navigate_with_retry(page: Page, url: str, retries: int = MAX_RETRIES) -> bool:
     for attempt in range(1, retries + 1):
         try:
@@ -197,11 +206,7 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
             if limit_reached:
                 break
             offset = page_num * _JOBS_PER_PAGE
-            url = _BASE_URL.format(
-                query=urllib.parse.quote(query),
-                location=urllib.parse.quote(SEARCH_COUNTRY),
-                offset=offset,
-            )
+            url = _build_search_url(query, offset)
             logger.info("LinkedIn | query='%s' | page %d | %s", query, page_num + 1, url)
 
             if not _navigate_with_retry(page, url):

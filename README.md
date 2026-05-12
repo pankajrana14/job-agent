@@ -151,6 +151,10 @@ the better the filtering.
 Set `SEARCH_COUNTRY` to any country name as recognised by LinkedIn's location filter
 (e.g. `"Germany"`, `"United Kingdom"`, `"Netherlands"`, `"India"`).
 
+Keep `LINKEDIN_SEARCH_QUERIES` as role/title keywords only. Do not include country
+names such as `"Germany"` or `"Netherlands"` in those queries; LinkedIn already
+receives `SEARCH_COUNTRY` through its separate `location` parameter.
+
 | Platform | Country support |
 |---|---|
 | LinkedIn | Any country |
