@@ -11,7 +11,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # LLM evaluation (LiteLLM + Groq)
 # ---------------------------------------------------------------------------
-LLM_MODEL: str           = os.getenv("LLM_MODEL", "gpt-4o-mini")
+LLM_MODEL: str           = os.getenv("LLM_MODEL", "anthropic/claude-opus-4.6-20260204")
 LLM_MATCH_THRESHOLD: int = int(os.getenv("LLM_MATCH_THRESHOLD", "6"))
 
 # Fallback models tried in order if the primary model fails (rate limit / auth error).
@@ -20,7 +20,7 @@ LLM_FALLBACK_MODELS: list[str] = [
     m.strip()
     for m in os.getenv(
         "LLM_FALLBACK_MODELS",
-        "claude-haiku-4-5-20251001,gemini/gemini-2.0-flash",
+        "openai/gpt-5.4,gemini/gemini-3.1-pro-preview",
     ).split(",")
     if m.strip()
 ]
@@ -46,6 +46,8 @@ TARGET_ROLES: list[str] = [
     "Data Analyst",
     "Perception Engineer",
     "Embedded Software Engineer",
+    "Graduate Trainee",
+    "Trainee Program",
 ]
 
 # ---------------------------------------------------------------------------
@@ -56,7 +58,7 @@ TARGET_ROLES: list[str] = [
 # Examples of valid values: "Germany", "United Kingdom" (not "UK"),
 # "Netherlands", "Austria", "Belgium".  StepStone and BA Jobbörse are mapped
 # separately below; BA only supports Germany.
-SEARCH_COUNTRY: str = "Germany"
+SEARCH_COUNTRY: str = "Netherlands"
 
 # StepStone country → (domain, in-path segment).
 # Countries not listed here will be skipped by the StepStone scraper.
@@ -114,8 +116,20 @@ LINKEDIN_SEARCH_QUERIES: list[str] = [
     "Python Developer Germany",
     "Data Engineer Germany",
     "Data Analyst Germany",
+    "Research Engineer Germany",
     "Perception Engineer Germany",
     "Embedded Software Engineer Germany",
+    "Graduate Trainee Program Germany",
+    "Trainee Program Engineering Germany",
+    "Deep Learning Engineer Germany",
+    "Sensor Fusion Engineer Germany",
+    "Development Engineer Germany",
+    "Autonomous Systems Engineer Germany",
+    "Perception Software Engineer Germany",
+    "Algorithm Engineer Germany",
+    "ADAS Software Engineer Germany",
+    "Robotics Software Engineer Germany",
+    "Junior Application Engineer Germany",
 ]
 
 STEPSTONE_SEARCH_QUERIES: list[str] = [
@@ -128,7 +142,17 @@ STEPSTONE_SEARCH_QUERIES: list[str] = [
     "Data Engineer",
     "Data Analyst",
     "Perception Engineer",
+    "Development Engineer",
     "Embedded Software Engineer",
+    "Research Engineer",
+    "Trainee Programm",
+    "Graduate Trainee",
+    "Sensorfusion Ingenieur",
+    "Algorithmenentwickler",
+    "Autonomes Fahren Softwareentwickler",
+    "Softwareentwickler Bildverarbeitung",
+    "Deep Learning Entwickler",
+    "Softwareentwickler Fahrerassistenz",
 ]
 
 # Bundesagentur für Arbeit – German terms work best with this API
@@ -139,10 +163,20 @@ BA_SEARCH_QUERIES: list[str] = [
     "Computer Vision Engineer",
     "C++ Entwickler",
     "Python Entwickler",
+    "Research Engineer",
     "Data Engineer",
     "Data Analyst",
+    "Development Engineer",
     "Perception Engineer",
     "Embedded Software Engineer",
+    "Trainee Programm",
+    "Graduate Trainee",
+    "Sensorfusion Ingenieur",
+    "Algorithmenentwickler",
+    "Autonomes Fahren Softwareentwickler",
+    "Softwareentwickler Bildverarbeitung",
+    "Deep Learning Entwickler",
+    "Softwareentwickler Fahrerassistenz",
 ]
 
 # ---------------------------------------------------------------------------
@@ -158,15 +192,15 @@ BA_ENABLED:         bool = True
 # ---------------------------------------------------------------------------
 # Scraping behaviour
 # ---------------------------------------------------------------------------
-MIN_DELAY: float = 1.5     # seconds between requests
+MIN_DELAY: float = 1.5
 MAX_DELAY: float = 3.5
 MAX_RETRIES: int = 3
 PAGE_TIMEOUT: int = 30_000  # milliseconds (Playwright)
 
 # Only accept jobs posted within this many hours.
-# 36h (not 24h) because some platforms use a calendar-day filter that can
-# include jobs posted up to ~36h ago (e.g. StepStone's datePosted=1).
-MAX_POSTING_AGE_HOURS: int = 36
+# 48h (not 24h) because some platforms use a calendar-day filter that can
+# include jobs posted up to ~48h ago (e.g. StepStone's datePosted=1).
+MAX_POSTING_AGE_HOURS: int = 48
 
 # How many result pages to scrape per query.
 # 24-hour filter means very few results per page → 2 pages is enough.

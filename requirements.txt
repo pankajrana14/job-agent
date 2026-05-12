@@ -3,7 +3,7 @@
 # After installing, run: playwright install chromium
 
 # Web scraping
-playwright==1.44.0
+playwright==1.58.0
 
 # LLM evaluation (replaces keyword filters with AI reasoning)
 litellm>=1.40.0

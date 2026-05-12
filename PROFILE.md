@@ -23,7 +23,7 @@ Germany; I am eligible to transition to a job-seeker or work visa after graduati
 - **Automotive Standards**: V-Model, ADAS development, control loops, real-time
   hardware-in-the-loop (HiL) systems, ES Mini, OpenScenario
 - **Embedded Systems**: Embedded C++, microcontroller programming (ESP32),
-  real-time control software, firmware development
+  real-time control software
 - **Control Systems**: Real-time control loops, MATLAB, Simulink, control engineering
 - **Infrastructure**: Linux, Git/GitLab, Docker (basics), CMake, CUDA / GPU computing,
   Slurm (HPC), Jira, Confluence
@@ -51,6 +51,9 @@ I am open to any full-time permanent role in these areas (including non-obvious 
 - Python Developer (ML, data science, or robotics context)
 - Research Engineer / Research Scientist (ML, CV, or robotics)
 - Systems Engineer (mechatronics, automotive, or automation context)
+- Graduate Trainee / Trainee Program (engineering, technology, automotive, or IT track)
+- IT Trainee Program (IT project management, IT architecture, AI/IoT/DevOps focus areas)
+- Digital Trainee Program at large technology or industrial companies
 
 ## Acceptable Experience Level
 - Explicitly stated: 0–3 years, Junior, Entry Level, Associate, Graduate
@@ -76,6 +79,7 @@ A job scores higher when it involves:
 - Fraunhofer, DLR, Helmholtz, or other applied research institutes
 - Industry 4.0 / smart factory / collaborative robots
 - Real-time embedded systems in safety-critical environments
+- IT trainee programs at large industrial or technology companies (e.g. Siemens, SAP, Bosch, Deutsche Telekom) — especially tracks covering AI, IoT, DevOps, or digital transformation
 
 ## Not a Match
 - Roles with no software/engineering component (sales, marketing, HR, finance, legal)

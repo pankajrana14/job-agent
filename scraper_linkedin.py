@@ -9,7 +9,7 @@ LinkedIn experience-level filter codes:
   3 = Associate
 
 URL template:
-  https://www.linkedin.com/jobs/search/?keywords=<QUERY>&location=Germany
+  https://www.linkedin.com/jobs/search/?keywords=<QUERY>&location=<SEARCH_COUNTRY>
   &f_E=2%2C3&f_TPR=r86400&start=<OFFSET>
 
 f_TPR=r86400 → posted in the last 24 hours (86 400 s)
@@ -31,6 +31,7 @@ from config import (
     MIN_DELAY,
     PAGE_TIMEOUT,
     SEARCH_COUNTRY,
+    STEPSTONE_COUNTRY_DOMAINS,
 )
 from utils import (
     extract_summary,
@@ -52,6 +53,62 @@ _BASE_URL = (
     "&start={offset}"
 )
 _JOBS_PER_PAGE = 25
+
+_COUNTRY_QUERY_SUFFIX_ALIASES = {
+    "deutschland",
+    "great britain",
+    "nederland",
+    "the netherlands",
+    "uk",
+    "united kingdom",
+}
+
+
+def _country_suffix_pattern(country: str) -> str:
+    parts = re.split(r"\s+", country.strip())
+    return r"\W+".join(re.escape(part) for part in parts if part)
+
+
+def _linkedin_keyword_query(query: str) -> str:
+    """
+    Return a LinkedIn keyword query whose trailing country matches SEARCH_COUNTRY.
+
+    Saved queries often include a country suffix such as "Germany". When the
+    selected country changes, keep the position text and replace that suffix so
+    LinkedIn receives keywords like "AI Engineer Netherlands".
+    """
+    cleaned = query.strip()
+    suffixes = {
+        SEARCH_COUNTRY,
+        *STEPSTONE_COUNTRY_DOMAINS.keys(),
+        *_COUNTRY_QUERY_SUFFIX_ALIASES,
+    }
+    base_query = cleaned
+
+    for suffix in sorted((s for s in suffixes if s.strip()), key=len, reverse=True):
+        suffix_pattern = _country_suffix_pattern(suffix)
+        if not suffix_pattern:
+            continue
+        if re.fullmatch(suffix_pattern, cleaned, flags=re.IGNORECASE):
+            base_query = ""
+            break
+        pattern = (
+            rf"(?:[\s,;/()\-\u2013\u2014]+){suffix_pattern}"
+            rf"[\s,;/()\-\u2013\u2014]*$"
+        )
+        trimmed = re.sub(pattern, "", cleaned, flags=re.IGNORECASE).strip(" ,;/()-")
+        if trimmed != cleaned:
+            base_query = trimmed
+            break
+
+    keyword_query = f"{base_query} {SEARCH_COUNTRY}".strip() if base_query else SEARCH_COUNTRY
+    if keyword_query != cleaned:
+        logger.debug(
+            "LinkedIn: normalised keyword query '%s' -> '%s'.",
+            query,
+            keyword_query,
+        )
+    return keyword_query
 
 
 def _navigate_with_retry(page: Page, url: str, retries: int = MAX_RETRIES) -> bool:
@@ -191,6 +248,7 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
     results: list[dict] = []
     detail_count = 0
     limit_reached = False
+    keyword_query = _linkedin_keyword_query(query)
 
     try:
         for page_num in range(MAX_PAGES_PER_QUERY):
@@ -198,11 +256,20 @@ def _scrape_query(browser: Browser, query: str) -> list[dict]:
                 break
             offset = page_num * _JOBS_PER_PAGE
             url = _BASE_URL.format(
-                query=urllib.parse.quote(query),
+                query=urllib.parse.quote(keyword_query),
                 location=urllib.parse.quote(SEARCH_COUNTRY),
                 offset=offset,
             )
-            logger.info("LinkedIn | query='%s' | page %d | %s", query, page_num + 1, url)
+            if keyword_query == query:
+                logger.info("LinkedIn | query='%s' | page %d | %s", query, page_num + 1, url)
+            else:
+                logger.info(
+                    "LinkedIn | query='%s' (keywords='%s') | page %d | %s",
+                    query,
+                    keyword_query,
+                    page_num + 1,
+                    url,
+                )
 
             if not _navigate_with_retry(page, url):
                 logger.error("LinkedIn: could not load search page for '%s'", query)
