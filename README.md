@@ -2,7 +2,7 @@
 
 **AI-powered job-search automation — search any country from a desktop GUI**
 
-Scrapes LinkedIn, StepStone, and BA Jobbörse, evaluates every posting against
+Scrapes LinkedIn, StepStone, Xing, and BA Jobbörse, evaluates every posting against
 your candidate profile using an LLM, deduplicates results, and delivers a
 structured digest email — all configurable through a desktop GUI.
 
@@ -32,7 +32,8 @@ structured digest email — all configurable through a desktop GUI.
 ```
 LinkedIn ──┐
 StepStone ─┼──► Playwright scraper ──► LiteLLM (score 1–10) ──► SHA-256 dedupe ──► Gmail digest
-BA Jobbörse┘    headless Chromium       GPT-4o / Claude / Gemini   JSON database     HTML email
+Xing ─────┤    headless Chromium       GPT-4o / Claude / Gemini   JSON database     HTML email
+BA Jobbörse┘
 ```
 
 1. **Scrape** — Playwright navigates each platform headlessly, extracts job cards and detail pages.
@@ -84,8 +85,8 @@ python gui.py                # open the desktop GUI
 
 ## Features
 
-- **Multi-country search** — set any country in the GUI; LinkedIn searches the specified country, StepStone switches to its national domain (Germany, Austria, Belgium, Netherlands), BA Jobbörse is auto-skipped for non-Germany searches
-- **Three platforms** — LinkedIn, StepStone, and BA Jobbörse (Germany's federal employment agency)
+- **Multi-country search** — set any country in the GUI; LinkedIn searches the specified country, StepStone switches to its national domain (Germany, Austria, Belgium, Netherlands), and Xing plus BA Jobbörse are auto-skipped for non-Germany searches
+- **Four platforms** — LinkedIn, StepStone, Xing Jobs, and BA Jobbörse (Germany's federal employment agency)
 - **AI match scoring** — jobs evaluated against a free-text candidate profile, not keyword lists; model and threshold are configurable
 - **Multi-model fallback** — primary model + ordered fallback list (e.g. GPT-4o → Claude Haiku → Gemini Flash) when a model fails or returns unusable output
 - **Duplicate prevention** — SHA-256 content hash; the same posting is never emailed twice even across platforms
@@ -104,6 +105,7 @@ job-agent/
 ├── config.py               # All tunable parameters
 ├── scraper_linkedin.py     # LinkedIn scraper (Playwright)
 ├── scraper_stepstone.py    # StepStone.de scraper (Playwright)
+├── scraper_xing.py         # Xing Jobs scraper (Playwright, Germany-only)
 ├── scraper_ba.py           # BA Jobbörse scraper (REST API)
 ├── evaluator.py            # LiteLLM-based job scoring
 ├── email_sender.py         # Gmail SMTP — HTML + plain-text email
@@ -159,6 +161,7 @@ receives `SEARCH_COUNTRY` through its separate `location` parameter.
 |---|---|
 | LinkedIn | Any country |
 | StepStone | Germany, Austria, Belgium, Netherlands |
+| Xing Jobs | Germany only (skipped automatically for other countries) |
 | BA Jobbörse | Germany only (skipped automatically for other countries) |
 
 ### Scraping parameters (`config.py` or GUI → Configuration tab)

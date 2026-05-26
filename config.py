@@ -58,7 +58,7 @@ TARGET_ROLES: list[str] = [
 # Examples of valid values: "Germany", "United Kingdom" (not "UK"),
 # "Netherlands", "Austria", "Belgium".  StepStone and BA Jobbörse are mapped
 # separately below; BA only supports Germany.
-SEARCH_COUNTRY: str = "Netherlands"
+SEARCH_COUNTRY: str = "Germany"
 
 # StepStone country → (domain, in-path segment).
 # Countries not listed here will be skipped by the StepStone scraper.
@@ -158,6 +158,30 @@ STEPSTONE_SEARCH_QUERIES: list[str] = [
     "Softwareentwickler Fahrerassistenz",
 ]
 
+# Xing Jobs is Germany-only in this project; German terms improve recall.
+XING_SEARCH_QUERIES: list[str] = [
+    "AI Engineer",
+    "Machine Learning Engineer",
+    "Robotics Engineer",
+    "Computer Vision Engineer",
+    "C++ Entwickler",
+    "Python Entwickler",
+    "Data Engineer",
+    "Data Analyst",
+    "Perception Engineer",
+    "Development Engineer",
+    "Embedded Software Engineer",
+    "Research Engineer",
+    "Trainee Programm",
+    "Graduate Trainee",
+    "Sensorfusion Ingenieur",
+    "Algorithmenentwickler",
+    "Autonomes Fahren Softwareentwickler",
+    "Softwareentwickler Bildverarbeitung",
+    "Deep Learning Entwickler",
+    "Softwareentwickler Fahrerassistenz",
+]
+
 # Bundesagentur für Arbeit – German terms work best with this API
 BA_SEARCH_QUERIES: list[str] = [
     "AI Engineer",
@@ -187,6 +211,7 @@ BA_SEARCH_QUERIES: list[str] = [
 # ---------------------------------------------------------------------------
 LINKEDIN_ENABLED:   bool = True
 STEPSTONE_ENABLED:  bool = True
+XING_ENABLED:       bool = True
 
 # Bundesagentur für Arbeit – Germany's federal employment agency.
 # Uses a public REST API (no CAPTCHA, no bot-detection).

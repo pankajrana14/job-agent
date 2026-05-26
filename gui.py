@@ -564,9 +564,11 @@ class ConfigPage(QWidget):
         self._cb_li  = QCheckBox("LinkedIn")
         self._cb_ss  = QCheckBox("StepStone")
         self._cb_ba  = QCheckBox("BA Jobbörse")
+        self._cb_xing = QCheckBox("Xing")
         self._lw_li  = _EmptyListWidget("No queries yet — click + Add to get started")
         self._lw_ss  = _EmptyListWidget("No queries yet — click + Add to get started")
         self._lw_ba  = _EmptyListWidget("No queries yet — click + Add to get started")
+        self._lw_xing = _EmptyListWidget("No queries yet — click + Add to get started")
         self._s_age  = QSpinBox(); self._s_pg = QSpinBox(); self._s_det = QSpinBox()
         self._s_min  = QDoubleSpinBox(); self._s_max = QDoubleSpinBox()
         self._prof   = QPlainTextEdit()
@@ -600,12 +602,13 @@ class ConfigPage(QWidget):
         lay.addWidget(loc)
 
         pt = QGroupBox("ENABLED PLATFORMS"); ptl = QHBoxLayout(pt); ptl.setSpacing(28)
-        for cb in (self._cb_li, self._cb_ss, self._cb_ba): ptl.addWidget(cb)
+        for cb in (self._cb_li, self._cb_ss, self._cb_ba, self._cb_xing): ptl.addWidget(cb)
         ptl.addStretch(); lay.addWidget(pt)
 
         lay.addWidget(self._qgroup("LINKEDIN QUERIES",    self._lw_li))
         lay.addWidget(self._qgroup("STEPSTONE QUERIES",   self._lw_ss))
         lay.addWidget(self._qgroup("BA JOBBÖRSE QUERIES", self._lw_ba))
+        lay.addWidget(self._qgroup("XING QUERIES",        self._lw_xing))
 
         sp = QGroupBox("SCRAPING PARAMETERS"); sf = QFormLayout(sp)
         sf.setVerticalSpacing(10); sf.setHorizontalSpacing(16)
@@ -645,6 +648,7 @@ class ConfigPage(QWidget):
         self._cb_li.setChecked(self._b(t, "LINKEDIN_ENABLED", True))
         self._cb_ss.setChecked(self._b(t, "STEPSTONE_ENABLED", True))
         self._cb_ba.setChecked(self._b(t, "BA_ENABLED", True))
+        self._cb_xing.setChecked(self._b(t, "XING_ENABLED", True))
         self._s_age.setValue(self._i(t, "MAX_POSTING_AGE_HOURS", 36))
         self._s_pg.setValue(self._i(t, "MAX_PAGES_PER_QUERY", 2))
         self._s_det.setValue(self._i(t, "MAX_DETAIL_PAGES_PER_QUERY", 20))
@@ -653,6 +657,7 @@ class ConfigPage(QWidget):
         self._fill(self._lw_li, self._lst(t, "LINKEDIN_SEARCH_QUERIES"))
         self._fill(self._lw_ss, self._lst(t, "STEPSTONE_SEARCH_QUERIES"))
         self._fill(self._lw_ba, self._lst(t, "BA_SEARCH_QUERIES"))
+        self._fill(self._lw_xing, self._lst(t, "XING_SEARCH_QUERIES"))
 
     @staticmethod
     def _b(t, v, d):
@@ -686,13 +691,13 @@ class ConfigPage(QWidget):
         t = _CONFIG_FILE.read_text(encoding="utf-8")
         country = self._country.text().strip() or "Germany"
         t = re.sub(r'^(SEARCH_COUNTRY\s*:\s*str\s*=\s*)["\'][^"\']*["\']', rf'\g<1>"{country}"', t, flags=re.M)
-        for v, val in [("LINKEDIN_ENABLED", self._cb_li.isChecked()), ("STEPSTONE_ENABLED", self._cb_ss.isChecked()), ("BA_ENABLED", self._cb_ba.isChecked())]:
+        for v, val in [("LINKEDIN_ENABLED", self._cb_li.isChecked()), ("STEPSTONE_ENABLED", self._cb_ss.isChecked()), ("BA_ENABLED", self._cb_ba.isChecked()), ("XING_ENABLED", self._cb_xing.isChecked())]:
             t = re.sub(rf"^({v}\s*:\s*bool\s*=\s*).*", rf"\g<1>{val}", t, flags=re.M)
         for v, val in [("MAX_POSTING_AGE_HOURS", self._s_age.value()), ("MAX_PAGES_PER_QUERY", self._s_pg.value()), ("MAX_DETAIL_PAGES_PER_QUERY", self._s_det.value())]:
             t = re.sub(rf"^({v}\s*:\s*int\s*=\s*).*", rf"\g<1>{val}", t, flags=re.M)
         for v, val in [("MIN_DELAY", self._s_min.value()), ("MAX_DELAY", self._s_max.value())]:
             t = re.sub(rf"^({v}\s*:\s*float\s*=\s*).*", rf"\g<1>{val}", t, flags=re.M)
-        for v, lw in [("LINKEDIN_SEARCH_QUERIES", self._lw_li), ("STEPSTONE_SEARCH_QUERIES", self._lw_ss), ("BA_SEARCH_QUERIES", self._lw_ba)]:
+        for v, lw in [("LINKEDIN_SEARCH_QUERIES", self._lw_li), ("STEPSTONE_SEARCH_QUERIES", self._lw_ss), ("BA_SEARCH_QUERIES", self._lw_ba), ("XING_SEARCH_QUERIES", self._lw_xing)]:
             items = [lw.item(i).text() for i in range(lw.count()) if lw.item(i).text().strip()]
             body = "\n" + "".join(f'    "{q}",\n' for q in items)
             t = re.sub(rf"({v}[^=]*=\s*\[)[^\]]*(\])", rf"\g<1>{body}\g<2>", t, flags=re.DOTALL)

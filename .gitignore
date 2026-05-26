@@ -31,6 +31,7 @@ desktop.ini
 
 # ── Claude Code ───────────────────────────────────────────────────────────────
 .claude/
+docs/superpowers/
 
 # ── Test artefacts ────────────────────────────────────────────────────────────
 test_results*.json

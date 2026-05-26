@@ -10,13 +10,17 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from config import GMAIL_PASSWORD, GMAIL_USER, RECIPIENT_EMAIL
+from config import GMAIL_PASSWORD, GMAIL_USER, RECIPIENT_EMAIL, SEARCH_COUNTRY
 from utils import get_current_date
 
 logger = logging.getLogger("job_agent")
 
 _SMTP_HOST = "smtp.gmail.com"
 _SMTP_PORT = 587
+
+
+def _mail_label() -> str:
+    return f"{SEARCH_COUNTRY} Job Agent"
 
 
 # ---------------------------------------------------------------------------
@@ -60,7 +64,7 @@ def _build_plain_text_body(jobs: list[dict]) -> str:
 
     lines.append(f"Total new jobs: {len(jobs)}")
     lines.append("")
-    lines.append("-- Germany Job Agent --")
+    lines.append(f"-- {_mail_label()} --")
     return "\n".join(lines)
 
 
@@ -101,7 +105,7 @@ def _build_html_body(jobs: list[dict]) -> str:
     parts = [
         f"<html><head><style>{css}</style></head><body>",
         '<div class="container">',
-        f'<h1>Germany Job Update &ndash; {date_str}</h1>',
+        f'<h1>{SEARCH_COUNTRY} Job Update &ndash; {date_str}</h1>',
     ]
 
     if not jobs:
@@ -156,7 +160,7 @@ def _build_html_body(jobs: list[dict]) -> str:
         parts.append(f"<p><strong>Total new jobs: {len(jobs)}</strong></p>")
 
     parts.append(
-        f'<div class="footer">Germany Job Agent &bull; {date_str}</div>'
+        f'<div class="footer">{_mail_label()} &bull; {date_str}</div>'
     )
     parts.append("</div></body></html>")
     return "\n".join(parts)
@@ -186,7 +190,7 @@ def send_email(jobs: list[dict]) -> bool:
         return False
 
     date_str = get_current_date()
-    subject = f"Germany AI/Robotics Job Update – {date_str}"
+    subject = f"{SEARCH_COUNTRY} AI/Robotics Job Update – {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject

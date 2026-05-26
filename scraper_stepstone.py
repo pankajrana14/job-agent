@@ -6,6 +6,7 @@ than LinkedIn and does not require a login.
 
 Search URL template:
   https://www.stepstone.de/jobs/<ENCODED_QUERY>/in-deutschland
+  https://www.stepstone.nl/vacatures/<ENCODED_QUERY>/in-nederland
   ?sort=2&datePosted=1&page=<PAGE>
 
 sort=2       → most recent first
@@ -40,7 +41,10 @@ from utils import (
 
 logger = logging.getLogger("job_agent")
 
-_BASE_URL = "https://{domain}/jobs/{query}/{location_path}?sort=2&datePosted=1&page={page}"
+_BASE_URL = "https://{domain}/{route}/{query}/{location_path}?sort=2&datePosted=1&page={page}"
+_STEPSTONE_ROUTE_BY_COUNTRY = {
+    "Netherlands": "vacatures",
+}
 
 
 def _get_stepstone_domain() -> Optional[tuple[str, str]]:
@@ -54,6 +58,17 @@ def _get_stepstone_domain() -> Optional[tuple[str, str]]:
             ", ".join(STEPSTONE_COUNTRY_DOMAINS),
         )
     return entry
+
+
+def _get_stepstone_route() -> str:
+    """Return the country-specific StepStone search route."""
+    return _STEPSTONE_ROUTE_BY_COUNTRY.get(SEARCH_COUNTRY, "jobs")
+
+
+def _encode_query_path(query: str) -> str:
+    """Encode a query for StepStone's path-style search URLs."""
+    slug = "-".join(query.strip().split())
+    return urllib.parse.quote(slug)
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +244,7 @@ def _scrape_detail(page: Page, job: dict) -> dict:
 # Per-query scraper
 # ---------------------------------------------------------------------------
 
-def _scrape_query(browser: Browser, query: str, domain: str, location_path: str) -> list[dict]:
+def _scrape_query(browser: Browser, query: str, domain: str, route: str, location_path: str) -> list[dict]:
     page = browser.new_page()
     page.set_extra_http_headers({"User-Agent": get_random_user_agent()})
     results: list[dict] = []
@@ -240,9 +255,10 @@ def _scrape_query(browser: Browser, query: str, domain: str, location_path: str)
         for page_num in range(1, MAX_PAGES_PER_QUERY + 1):
             if limit_reached:
                 break
-            encoded = urllib.parse.quote(query)
+            encoded = _encode_query_path(query)
             url = _BASE_URL.format(
                 domain=domain,
+                route=route,
                 query=encoded,
                 location_path=location_path,
                 page=page_num,
@@ -313,6 +329,7 @@ def scrape_stepstone() -> list[dict]:
     if stepstone_entry is None:
         return []
     domain, location_path = stepstone_entry
+    route = _get_stepstone_route()
 
     all_jobs: list[dict] = []
     seen_ids: set[str] = set()
@@ -326,7 +343,7 @@ def scrape_stepstone() -> list[dict]:
             for query in STEPSTONE_SEARCH_QUERIES:
                 logger.info("=== StepStone scrape: %s ===", query)
                 try:
-                    jobs = _scrape_query(browser, query, domain, location_path)
+                    jobs = _scrape_query(browser, query, domain, route, location_path)
                     for job in jobs:
                         jid = job.get("job_id", "")
                         if jid and jid not in seen_ids:

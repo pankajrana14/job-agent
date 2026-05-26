@@ -1,93 +1,78 @@
 # Candidate Profile
 
 ## About Me
-I am a Mechatronics engineer (M.Sc. candidate, graduating 2026) with hands-on experience
-in robotics software, embedded systems, computer vision, and machine learning. I have
-worked at Porsche Engineering Services, ZSW Baden-Württemberg, DST, and the University
-of Duisburg-Essen. I am actively looking for full-time permanent positions (0–3 years
-experience required) based in Germany. I am comfortable working in both German and
-English environments. I hold an Indian passport and am currently on a student visa in
-Germany; I am eligible to transition to a job-seeker or work visa after graduation.
+I am a Mechatronics engineer with an M.Sc. in Mechanical Engineering, ISE, specialization Mechatronics, from the University of Duisburg-Essen, completed in 2026 with a final grade of 1.9. I have hands-on experience in robotics software, embedded systems, computer vision, 3D perception, and machine learning through work at Porsche Engineering Services, ZSW Baden-Württemberg, DST, and the University of Duisburg-Essen. I am actively looking for full-time permanent positions in Germany, preferably junior, entry-level, graduate, or early-career roles. I am comfortable working in both German and English environments.
 
 ## Core Technical Skills
-- **Languages**: C++ (strong), Python (strong)
-- **Robotics / Autonomous Systems**: ROS2, sensor fusion, LiDAR processing, NIR cameras,
-  3D point clouds, real-time perception pipelines, coordinate transformations, Octomap
-- **Machine Learning & AI**: Deep learning, PyTorch, TensorFlow, Keras, scikit-learn,
-  object detection, multi-object tracking, computer vision, OpenCV, Open3D,
-  Point Cloud Library (PCL), contrastive learning, autoencoders, 3D U-Net,
-  spatio-temporal models, TCN (Temporal Convolutional Networks)
-- **Tracking & State Estimation**: Kalman-based multi-object tracking, trajectory
-  embedding, BEV (Bird's Eye View) encodings, occupancy prediction
-- **Simulation**: CARLA (autonomous driving simulator), Gazebo
-- **Automotive Standards**: V-Model, ADAS development, control loops, real-time
-  hardware-in-the-loop (HiL) systems, ES Mini, OpenScenario
-- **Embedded Systems**: Embedded C++, microcontroller programming (ESP32),
-  real-time control software
-- **Control Systems**: Real-time control loops, MATLAB, Simulink, control engineering
-- **Infrastructure**: Linux, Git/GitLab, Docker (basics), CMake, CUDA / GPU computing,
-  Slurm (HPC), Jira, Confluence
-- **Data & Testing**: NumPy, Matplotlib, Jupyter Notebook, pytest, feature engineering,
-  model evaluation (IoU, F1, precision, recall, t-SNE)
-- **Development Methods**: Agile (Scrum, Kanban), V-Model, OOP, unit testing, debugging
+- **Languages**: C++ (strong), Python (strong), Bash/Shell, SQL
+- **Robotics / Autonomous Systems**: ROS2, sensor fusion, LiDAR processing, NIR cameras, 3D point clouds, real-time perception pipelines, coordinate transformations, Octomap, PTU camera systems
+- **Machine Learning & AI**: Deep learning, PyTorch, TensorFlow, Keras, scikit-learn, object detection, multi-object tracking, computer vision, OpenCV, Open3D, Point Cloud Library (PCL), contrastive learning, autoencoders, 3D U-Net, spatio-temporal models, TCN
+- **Tracking & State Estimation**: Kalman-based multi-object tracking, trajectory embedding, BEV encodings, occupancy prediction, model evaluation using IoU, F1, precision, recall, and t-SNE
+- **Simulation & Automotive**: CARLA, Gazebo, ADAS simulator development, OpenScenario, ES Mini, real-time hardware control loops
+- **Embedded / Real-Time Systems**: Embedded C++, ESP32, microcontroller programming, hardware-software integration, real-time-adjacent control software
+- **Control Systems**: MATLAB, Simulink, control engineering, real-time control loops
+- **Infrastructure & Tools**: Linux, Git/GitLab, Docker, CMake, PostgreSQL/TimescaleDB, Jira, Confluence, pytest, Visual Studio, basic CUDA/GPU programming knowledge, Slurm used during master's thesis
+- **Development Methods**: Agile methods (Scrum, Kanban), object-oriented programming, unit/integration testing, debugging, academic/project exposure to the V-Model
 
 ## Languages
-- **German**: B2 (professional working proficiency)
-- **English**: C2 (fluent)
+- **German**: B2
+- **English**: C1 / fluent, IELTS Academic 7.5
 
 ## Education
-- M.Sc. Mechanical Engineering (Mechatronics), University of Duisburg-Essen — current grade 2.1
+- M.Sc. Mechanical Engineering, ISE, specialization Mechatronics, University of Duisburg-Essen, final grade 1.9, completed 2026
 - B.E. Mechanical Engineering, Panjab University, India
 
 ## Target Roles
-I am open to any full-time permanent role in these areas (including non-obvious job titles):
-- Software Engineer (robotics, automotive, or autonomous systems context)
+I am open to full-time permanent roles in Germany in these areas, including non-obvious job titles:
+- Software Engineer in robotics, automotive, perception, or autonomous systems
 - Robotics Software Engineer / Robotics Developer
 - AI Engineer / Machine Learning Engineer
 - Computer Vision Engineer / Perception Engineer
-- Embedded Software Engineer (robotics, automotive, or autonomous systems context)
+- 3D Perception / Point Cloud Processing Engineer
+- Embedded Software Engineer in robotics, automotive, sensors, or real-time systems
 - Autonomous Systems / Self-Driving / ADAS Engineer
-- C++ Developer (robotics, automotive, real-time systems)
-- Python Developer (ML, data science, or robotics context)
-- Research Engineer / Research Scientist (ML, CV, or robotics)
-- Systems Engineer (mechatronics, automotive, or automation context)
-- Graduate Trainee / Trainee Program (engineering, technology, automotive, or IT track)
-- IT Trainee Program (IT project management, IT architecture, AI/IoT/DevOps focus areas)
-- Digital Trainee Program at large technology or industrial companies
+- C++ Developer in robotics, automotive, simulation, or real-time systems
+- Python Developer in ML, data science, automation, or robotics contexts
+- Research Engineer / Applied AI Engineer in ML, CV, robotics, or sensor data
+- Systems Engineer in mechatronics, automotive, robotics, or automation
+- Graduate Trainee / Technology Trainee / Digital Trainee programs in engineering, AI, IoT, DevOps, automation, or industrial software
 
 ## Acceptable Experience Level
-- Explicitly stated: 0–3 years, Junior, Entry Level, Associate, Graduate
+- Explicitly stated: 0-3 years, Junior, Entry Level, Associate, Graduate
 - German equivalents: Berufseinsteiger, Absolvent, Einsteiger, Junior
-- No experience requirement stated (open-level roles)
+- Open-level roles with no strict experience requirement
+- Roles asking for "erste Erfahrung" or "erste praktische Erfahrung"
+- Roles asking for "mehrjährige Erfahrung" only if the technical match is very strong and the posting does not clearly require senior ownership
 
-**NOT acceptable**: Roles requiring 4+ years of experience, or Senior / Lead / Principal
-titles with no junior pathway mentioned in the description.
+**Usually not acceptable**: Roles requiring 4+ years, 5+ years, Senior, Lead, Principal, Architect, or Team Lead experience unless the description clearly allows junior or early-career candidates.
 
 ## Location
-Germany only. Remote positions are acceptable if the employer is clearly a German company
-(German address, German job board, or German language in posting).
+Germany only. Remote positions are acceptable if the employer is clearly a German company or the role is contractually based in Germany.
 
 ## Strong Match Signals
 A job scores higher when it involves:
-- Autonomous vehicles, drones, robots, or industrial automation
-- Computer vision / perception pipelines (LiDAR, camera, radar)
-- ML research or applied ML in a product team
-- ADAS, autonomous driving stacks, or smart mobility
-- Renewable energy / wind energy / energy technology
-- Automotive Tier 1 suppliers (e.g. Bosch, Continental, ZF, Valeo)
-- Startups or scale-ups building AI/robotics products
-- Fraunhofer, DLR, Helmholtz, or other applied research institutes
-- Industry 4.0 / smart factory / collaborative robots
-- Real-time embedded systems in safety-critical environments
-- IT trainee programs at large industrial or technology companies (e.g. Siemens, SAP, Bosch, Deutsche Telekom) — especially tracks covering AI, IoT, DevOps, or digital transformation
+- Autonomous vehicles, drones, robots, mobile robots, or industrial automation
+- Computer vision or perception pipelines using LiDAR, camera, radar, depth sensors, or point clouds
+- ML research or applied ML in a product or engineering team
+- ADAS, autonomous driving, simulation, or smart mobility
+- Robotics middleware, ROS2, C++, Python, sensor fusion, or tracking
+- 3D geometry, segmentation, computational geometry, or point cloud processing
+- Renewable energy, wind energy, environmental sensing, or energy technology
+- Automotive Tier 1 suppliers or engineering service providers
+- Startups or scale-ups building AI, robotics, autonomy, or automation products
+- Fraunhofer, DLR, Helmholtz, universities, or applied research institutes
+- Industry 4.0, smart factory, warehouse robotics, collaborative robots, or machine vision
+- Real-time or embedded systems where C++ and hardware integration matter
+- Graduate or trainee programs at large industrial or technology companies, especially AI, IoT, DevOps, automation, or digital transformation tracks
 
 ## Not a Match
-- Roles with no software/engineering component (sales, marketing, HR, finance, legal)
-- Roles outside Germany (unless remote for a confirmed German employer)
-- Roles requiring 4+ years with no junior pathway
-- Pure mechanical / electrical engineering with no software component
-- IT support, helpdesk, system administration
-- Working student / Werkstudent positions (part-time student jobs)
-- Internships / Praktikum (unpaid or short-term placements)
+- Roles with no software, engineering, data, AI, robotics, automation, or technical component
+- Roles outside Germany unless remote for a confirmed German employer
+- Roles requiring 4+ or 5+ years with no junior pathway
+- Pure mechanical design roles with no software, simulation, robotics, or automation component
+- IT support, helpdesk, pure system administration, or generic first-level support
+- Sales, marketing, HR, finance, legal, or non-technical consulting
+- Working student / Werkstudent positions
+- Internships / Praktikum
 - Thesis positions / Abschlussarbeit, Bachelorarbeit, Masterarbeit
-- Any part-time or temporary student role — full-time permanent positions only
+- Part-time or temporary student roles

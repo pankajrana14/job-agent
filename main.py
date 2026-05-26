@@ -23,6 +23,7 @@ from config import (
     DATABASE_FILE,
     LINKEDIN_ENABLED,
     STEPSTONE_ENABLED,
+    XING_ENABLED,
     BA_ENABLED,
 )
 from database import JobDatabase
@@ -56,6 +57,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     from scraper_linkedin  import scrape_linkedin
     from scraper_stepstone import scrape_stepstone
+    from scraper_xing      import scrape_xing
     from scraper_ba        import scrape_ba
     from evaluator         import evaluate_jobs
 
@@ -73,6 +75,11 @@ def main() -> None:
         raw_jobs.extend(_run_scraper("StepStone", scrape_stepstone))
     else:
         logger.info("StepStone scraper disabled (STEPSTONE_ENABLED=False).")
+
+    if XING_ENABLED:
+        raw_jobs.extend(_run_scraper("Xing", scrape_xing))
+    else:
+        logger.info("Xing scraper disabled (XING_ENABLED=False).")
 
     if BA_ENABLED:
         raw_jobs.extend(_run_scraper("BA Jobbörse", scrape_ba))

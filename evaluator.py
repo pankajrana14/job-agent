@@ -13,13 +13,14 @@ Output per job
 
 import json
 import logging
+import re
 import time
 from pathlib import Path
 from typing import TypedDict
 
 import litellm
 
-from config import LLM_FALLBACK_MODELS, LLM_MATCH_THRESHOLD, LLM_MODEL
+from config import LLM_FALLBACK_MODELS, LLM_MATCH_THRESHOLD, LLM_MODEL, SEARCH_COUNTRY
 
 logger = logging.getLogger("job_agent")
 
@@ -47,14 +48,65 @@ def get_profile_text() -> str:
     """Return the loaded candidate profile text (public accessor)."""
     return _PROFILE_TEXT
 
+
+def _profile_for_search_country(profile_text: str) -> str:
+    """Return profile text with obvious country preferences adjusted for this run."""
+    text = profile_text
+    replacements = [
+        (
+            r"Germany only\. Remote positions are acceptable if the employer is clearly a German company or the role is contractually based in Germany\.",
+            (
+                f"{SEARCH_COUNTRY} only. Remote positions are acceptable if the employer "
+                f"is clearly tied to {SEARCH_COUNTRY} or the role is contractually based "
+                f"in {SEARCH_COUNTRY}."
+            ),
+        ),
+        (
+            r"based in Germany",
+            f"based in {SEARCH_COUNTRY}",
+        ),
+        (
+            r"full-time permanent positions in Germany",
+            f"full-time permanent positions in {SEARCH_COUNTRY}",
+        ),
+        (
+            r"full-time permanent roles in Germany",
+            f"full-time permanent roles in {SEARCH_COUNTRY}",
+        ),
+        (
+            r"Germany only\. Remote positions are acceptable if the employer is clearly a German company\n"
+            r"\(German address, German job board, or German language in posting\)\.",
+            (
+                f"{SEARCH_COUNTRY} only. Remote positions are acceptable if the employer "
+                f"is clearly tied to {SEARCH_COUNTRY}."
+            ),
+        ),
+        (
+            r"Roles outside Germany unless remote for a confirmed German employer",
+            f"Roles outside {SEARCH_COUNTRY} unless remote for a confirmed {SEARCH_COUNTRY} employer",
+        ),
+        (
+            r"Roles outside Germany \(unless remote for a confirmed German employer\)",
+            (
+                f"Roles outside {SEARCH_COUNTRY} "
+                f"(unless remote for a confirmed {SEARCH_COUNTRY} employer)"
+            ),
+        ),
+    ]
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text)
+    return text
+
 # ---------------------------------------------------------------------------
 # System prompt sent to the LLM before every job evaluation
 # ---------------------------------------------------------------------------
 
+_SEARCH_PROFILE_TEXT = _profile_for_search_country(_PROFILE_TEXT)
+
 _SYSTEM_PROMPT = f"""You are an expert career advisor evaluating job postings for a specific candidate.
 
 CANDIDATE PROFILE:
-{_PROFILE_TEXT}
+{_SEARCH_PROFILE_TEXT}
 
 YOUR TASK:
 For each job posting I give you, decide whether it is a good fit for this candidate.
@@ -77,7 +129,7 @@ SCORING GUIDE:
 
 HARD REJECTION RULES (score ≤ 3 regardless of other signals):
 - Role requires 4+ years of experience AND description gives no junior pathway
-- Role is outside Germany and not remote for a German employer
+- Role is outside {SEARCH_COUNTRY} and not remote for an employer clearly tied to {SEARCH_COUNTRY}
 - Role has no software/engineering component (sales, HR, finance, legal, etc.)
 """.strip()
 
