@@ -1,14 +1,14 @@
 """
-evaluator.py – LiteLLM-powered job evaluator.
+evaluator.py - LiteLLM-powered job evaluator.
 
 Reads the candidate profile from PROFILE.md once at import time, then uses
-an LLM (default: gpt-4o-mini) to evaluate each scraped job against that profile.
+an LLM to evaluate each scraped job against that profile.
 
 Output per job
 --------------
-  match  – True if score >= LLM_MATCH_THRESHOLD
-  score  – 1–10 fit score
-  reason – one paragraph explaining the verdict
+  match  - True if score >= LLM_MATCH_THRESHOLD
+  score  - 1-10 weighted fit score
+  reason - one paragraph explaining the verdict
 """
 
 import json
@@ -37,7 +37,7 @@ if _PROFILE_PATH.exists():
     _PROFILE_TEXT = _PROFILE_PATH.read_text(encoding="utf-8").strip()
 else:
     logger.warning(
-        "PROFILE.md not found at %s – using empty profile. "
+        "PROFILE.md not found at %s - using empty profile. "
         "Create PROFILE.md to get accurate AI matching.",
         _PROFILE_PATH,
     )
@@ -97,6 +97,7 @@ def _profile_for_search_country(profile_text: str) -> str:
         text = re.sub(pattern, replacement, text)
     return text
 
+
 # ---------------------------------------------------------------------------
 # System prompt sent to the LLM before every job evaluation
 # ---------------------------------------------------------------------------
@@ -109,33 +110,57 @@ CANDIDATE PROFILE:
 {_SEARCH_PROFILE_TEXT}
 
 YOUR TASK:
-For each job posting I give you, decide whether it is a good fit for this candidate.
+For each job posting I give you, score whether it is a good fit for this candidate.
 Base your decision on the full job DESCRIPTION content, not just the title.
 A job titled "Autonomy Engineer" or "Softwareentwickler autonome Systeme" can be a
-perfect match even if it doesn't say "AI Engineer" explicitly.
+strong match even if it does not say "AI Engineer" explicitly.
 
-RESPOND with a single JSON object — no extra text, no markdown fences:
+RESPOND with a single JSON object - no extra text, no markdown fences:
 {{
-  "score": <integer 1–10>,
+  "role_domain_fit": <integer 1-10>,
+  "core_technical_skills": <integer 1-10>,
+  "seniority_fit": <integer 1-10>,
+  "language_fit": <integer 1-10>,
+  "company_domain_signal": <integer 1-10>,
+  "hard_reject": <true|false>,
+  "hard_reject_reason": "<short reason if hard_reject is true, otherwise empty>",
   "reason": "<one concise paragraph: why it matches or doesn't, referencing specific details from both the job and the profile>"
 }}
 
-SCORING GUIDE:
-  9–10 : Excellent fit – role, level, and tech stack align almost perfectly
-  7–8  : Good fit – most requirements match, minor gaps
-  5–6  : Partial fit – relevant domain but notable mismatches
-  3–4  : Poor fit – wrong domain or wrong seniority level
-  1–2  : No fit – unrelated to the candidate's background
+SCORING DIMENSIONS:
+- role_domain_fit (30%): target role/domain alignment with robotics, computer vision, AI/ML, embedded, data, software, autonomy, ADAS, or mechatronics.
+- core_technical_skills (30%): match to concrete tools and skills in the profile, such as C++, Python, ROS2, embedded systems, computer vision, PyTorch, OpenCV, point clouds, sensor fusion, simulation, data/ML tooling.
+- seniority_fit (20%): fit to junior, entry-level, graduate, associate, 0-3 years, or open-level roles. Senior/Lead/Principal or 4+ year roles should score low unless a junior pathway is explicit.
+- language_fit (10%): match to stated German/English requirements.
+- company_domain_signal (10%): relevance of company/domain, such as robotics, automotive, industrial automation, energy, applied research, AI/product engineering, or engineering services.
 
-HARD REJECTION RULES (score ≤ 3 regardless of other signals):
+DIMENSION SCORE GUIDE:
+  9-10 : Excellent alignment
+  7-8  : Good alignment with minor gaps
+  5-6  : Partial alignment
+  3-4  : Weak alignment
+  1-2  : No meaningful alignment
+
+DO NOT SCORE:
+- Location, remote/on-site setup, relocation, or contract basis.
+
+HARD REJECTION RULES (score capped at 3 regardless of other signals):
 - Role requires 4+ years of experience AND description gives no junior pathway
-- Role is outside {SEARCH_COUNTRY} and not remote for an employer clearly tied to {SEARCH_COUNTRY}
 - Role has no software/engineering component (sales, HR, finance, legal, etc.)
 """.strip()
 
 # Maximum characters of job description sent to the LLM.
 # Keeps token cost predictable while still covering the bulk of most postings.
 _MAX_DESC_CHARS = 2000
+
+_SCORE_WEIGHTS: dict[str, int] = {
+    "role_domain_fit": 30,
+    "core_technical_skills": 30,
+    "seniority_fit": 20,
+    "language_fit": 10,
+    "company_domain_signal": 10,
+}
+
 
 # ---------------------------------------------------------------------------
 # Result type
@@ -145,13 +170,40 @@ class EvalResult(TypedDict):
     match: bool
     score: int
     reason: str
+    dimension_scores: dict[str, int]
+    hard_reject: bool
 
 
 _FALLBACK: EvalResult = {
     "match": False,
     "score": 0,
     "reason": "Evaluation unavailable (API error).",
+    "dimension_scores": {},
+    "hard_reject": True,
 }
+
+
+def _clamp_score(value: object) -> int:
+    try:
+        score = int(value)
+    except (TypeError, ValueError):
+        score = 1
+    return max(1, min(10, score))
+
+
+def _normalise_dimension_scores(data: dict) -> dict[str, int]:
+    return {
+        key: _clamp_score(data.get(key, 1))
+        for key in _SCORE_WEIGHTS
+    }
+
+
+def _calculate_weighted_score(scores: dict[str, int], hard_reject: bool = False) -> int:
+    weighted = sum(_clamp_score(scores.get(key, 1)) * weight for key, weight in _SCORE_WEIGHTS.items())
+    final_score = max(1, min(10, round(weighted / 100)))
+    if hard_reject:
+        return min(final_score, 3)
+    return final_score
 
 
 def _extract_json_object(raw: str) -> dict:
@@ -198,7 +250,7 @@ def _build_completion_params(model: str, user_message: str) -> dict:
             {"role": "user", "content": user_message},
         ],
         "response_format": {"type": "json_object"},
-        "max_tokens": 500,
+        "max_tokens": 700,
     }
 
     # gpt-5 family currently enforces temperature=1.
@@ -209,13 +261,14 @@ def _build_completion_params(model: str, user_message: str) -> dict:
 
     return params
 
+
 # ---------------------------------------------------------------------------
 # Core evaluation call
 # ---------------------------------------------------------------------------
 
 def _call_model(model: str, user_message: str) -> EvalResult:
     """
-    Call a single LiteLLM model.  Retries once on rate-limit (5s wait).
+    Call a single LiteLLM model. Retries once on rate-limit (5s wait).
     Raises on all other errors so the caller can try the next fallback.
     """
     for attempt in range(1, 3):  # 2 attempts per model
@@ -223,19 +276,27 @@ def _call_model(model: str, user_message: str) -> EvalResult:
             response = litellm.completion(**_build_completion_params(model, user_message))
             raw = response.choices[0].message.content
             data = _extract_json_object(raw)
-            score = max(1, min(10, int(data.get("score", 0))))
+            dimension_scores = _normalise_dimension_scores(data)
+            hard_reject = bool(data.get("hard_reject", False))
+            score = _calculate_weighted_score(dimension_scores, hard_reject=hard_reject)
+            reason = str(data.get("reason", "")).strip()
+            hard_reject_reason = str(data.get("hard_reject_reason", "")).strip()
+            if hard_reject and hard_reject_reason:
+                reason = f"{reason} Hard reject: {hard_reject_reason}".strip()
             return EvalResult(
-                match  = score >= LLM_MATCH_THRESHOLD,
-                score  = score,
-                reason = str(data.get("reason", "")).strip(),
+                match=score >= LLM_MATCH_THRESHOLD,
+                score=score,
+                reason=reason,
+                dimension_scores=dimension_scores,
+                hard_reject=hard_reject,
             )
 
         except litellm.RateLimitError:
             if attempt == 1:
-                logger.warning("Rate limit on '%s' – retrying in 5s …", model)
+                logger.warning("Rate limit on '%s' - retrying in 5s.", model)
                 time.sleep(5)
             else:
-                raise   # let caller try next model
+                raise  # let caller try next model
 
 
 def evaluate_job(job: dict) -> EvalResult:
@@ -278,7 +339,7 @@ def evaluate_job(job: dict) -> EvalResult:
             logger.warning("Non-JSON response from '%s' for '%s': %s", model, title, exc)
             continue
         except Exception as exc:
-            logger.warning("Model '%s' failed for '%s': %s – trying next …", model, title, exc)
+            logger.warning("Model '%s' failed for '%s': %s - trying next.", model, title, exc)
 
     logger.error("All models failed for '%s'. Returning fallback.", title)
     return _FALLBACK
@@ -290,7 +351,7 @@ def evaluate_job(job: dict) -> EvalResult:
 
 def evaluate_jobs(jobs: list[dict], delay_between: float = 1.0) -> list[dict]:
     """
-    Evaluate a list of job dicts.  Attaches llm_score and llm_reason fields
+    Evaluate a list of job dicts. Attaches llm_score and llm_reason fields
     to each job, then returns only the matched ones.
 
     Parameters
@@ -304,23 +365,25 @@ def evaluate_jobs(jobs: list[dict], delay_between: float = 1.0) -> list[dict]:
     logger.info("AI evaluation: %d jobs to evaluate with model '%s'.", total, LLM_MODEL)
 
     for idx, job in enumerate(jobs, start=1):
-        title   = job.get("title", "?")
+        title = job.get("title", "?")
         company = job.get("company", "?")
 
         result = evaluate_job(job)
 
-        job["llm_score"]  = result["score"]
+        job["llm_score"] = result["score"]
         job["llm_reason"] = result["reason"]
+        job["llm_dimension_scores"] = result["dimension_scores"]
+        job["llm_hard_reject"] = result["hard_reject"]
 
         if result["match"]:
             matched.append(job)
             logger.info(
-                "✓ AI match [%d/%d] score=%d  '%s' @ %s",
+                "AI match [%d/%d] score=%d  '%s' @ %s",
                 idx, total, result["score"], title, company,
             )
         else:
             logger.debug(
-                "✗ AI reject [%d/%d] score=%d  '%s' @ %s  – %s",
+                "AI reject [%d/%d] score=%d  '%s' @ %s  - %s",
                 idx, total, result["score"], title, company,
                 result["reason"][:80],
             )
