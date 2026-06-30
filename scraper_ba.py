@@ -17,9 +17,11 @@ Search URL (web equivalent for manual inspection):
 """
 
 import logging
+import html
 import urllib.parse
 import urllib.request
 import json
+import re
 from typing import Optional
 
 from config import (
@@ -98,6 +100,50 @@ def _get_detail(refnr: str) -> dict:
     except Exception as exc:
         logger.debug("BA detail error (refnr=%s): %s", refnr, exc)
         return {}
+
+
+def _extract_detail_from_public_page_html(page_html: str) -> dict:
+    """Extract SSR job detail data embedded in the public BA job page."""
+    match = re.search(
+        r"<script[^>]*id=[\"']ng-state[\"'][^>]*>(.*?)</script>",
+        page_html or "",
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return {}
+
+    try:
+        state = json.loads(html.unescape(match.group(1)))
+    except json.JSONDecodeError:
+        return {}
+
+    detail = state.get("jobdetail")
+    if not isinstance(detail, dict):
+        return {}
+
+    description = str(detail.get("stellenangebotsBeschreibung") or "").strip()
+    if not description:
+        return {}
+
+    return {
+        "stellenbeschreibung": description,
+        "berufserfahrung": str(detail.get("berufserfahrung") or "").strip(),
+        "qualifikationsniveau": str(detail.get("qualifikationsniveau") or "").strip(),
+    }
+
+
+def _get_detail_from_public_page(refnr: str) -> dict:
+    """Fetch the public BA job page and extract SSR detail data as a fallback."""
+    url = _build_job_url(refnr)
+    req = urllib.request.Request(url, headers={"User-Agent": _HEADERS["User-Agent"]})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            page_html = resp.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        logger.debug("BA public detail page error (refnr=%s): %s", refnr, exc)
+        return {}
+
+    return _extract_detail_from_public_page_html(page_html)
 
 
 # ---------------------------------------------------------------------------
@@ -226,8 +272,24 @@ def _scrape_query(query: str) -> list[dict]:
             # Fetch full description
             refnr  = job.pop("_refnr", "")
             detail = _get_detail(refnr) if refnr else {}
+            if refnr and not (
+                _safe(detail, "stellenbeschreibung")
+                or _safe(detail, "beschreibung")
+                or _safe(detail, "stellenangebot", "stellenbeschreibung")
+                or _safe(detail, "stellenangebot", "beschreibung")
+            ):
+                detail = _get_detail_from_public_page(refnr)
             job    = _enrich_with_detail(job, detail)
             detail_count += 1
+
+            if not job.get("description", "").strip():
+                logger.warning(
+                    "BA: skipping '%s' @ %s because detail description is empty (refnr=%s).",
+                    job.get("title", "?"),
+                    job.get("company", "?"),
+                    refnr or "N/A",
+                )
+                continue
 
             # AI evaluator makes the final match decision in main.py
             job["job_id"] = generate_job_id(

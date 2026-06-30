@@ -21,7 +21,7 @@ structured digest email — all configurable through a desktop GUI.
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.6+-41CD52?logo=qt&logoColor=white)](https://doc.qt.io/qtforpython)
-[![LiteLLM](https://img.shields.io/badge/LiteLLM-GPT%20·%20Claude%20·%20Gemini-7C3AED)](https://github.com/BerriAI/litellm)
+[![LiteLLM](https://img.shields.io/badge/LiteLLM-Groq%20·%20Claude%20·%20Gemini%20·%20GPT-7C3AED)](https://github.com/BerriAI/litellm)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/python)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
@@ -32,7 +32,7 @@ structured digest email — all configurable through a desktop GUI.
 ```
 LinkedIn ──┐
 StepStone ─┼──► Playwright scraper ──► LiteLLM (score 1–10) ──► SHA-256 dedupe ──► Gmail digest
-Xing ─────┤    headless Chromium       GPT-4o / Claude / Gemini   JSON database     HTML email
+Xing ─────┤    headless Chromium       any model provider         JSON database     HTML email
 BA Jobbörse┘
 ```
 
@@ -75,7 +75,7 @@ python gui.py                # open the desktop GUI
 | Layer | Technology |
 |---|---|
 | Scraping | [Playwright](https://playwright.dev/python) — headless Chromium |
-| AI evaluation | [LiteLLM](https://github.com/BerriAI/litellm) — single interface for GPT-4o, Claude, Gemini |
+| AI evaluation | [LiteLLM](https://github.com/BerriAI/litellm) — swap any model via one `.env` line, no code changes |
 | Desktop GUI | [PySide6](https://doc.qt.io/qtforpython) — Qt 6 with Windows 11 Acrylic blur |
 | Email delivery | Gmail SMTP via Python `smtplib` — HTML + plain-text fallback |
 | Persistence | JSON flat-file with SHA-256 job IDs |
@@ -88,7 +88,7 @@ python gui.py                # open the desktop GUI
 - **Multi-country search** — set any country in the GUI; LinkedIn searches the specified country, StepStone switches to its national domain (Germany, Austria, Belgium, Netherlands), and Xing plus BA Jobbörse are auto-skipped for non-Germany searches
 - **Four platforms** — LinkedIn, StepStone, Xing Jobs, and BA Jobbörse (Germany's federal employment agency)
 - **AI match scoring** — jobs evaluated against a free-text candidate profile, not keyword lists; model and threshold are configurable
-- **Multi-model fallback** — primary model + ordered fallback list (e.g. GPT-4o → Claude Haiku → Gemini Flash) when a model fails or returns unusable output
+- **Multi-model fallback** — primary model + ordered fallback list across providers; if one hits a rate limit the next is tried automatically
 - **Duplicate prevention** — SHA-256 content hash; the same posting is never emailed twice even across platforms
 - **Desktop GUI** — PySide6 app with sidebar navigation, Windows 11 Acrylic glass effect, and live pipeline output
 - **Scheduled runs** — integrates with Windows Task Scheduler for twice-daily automated execution
@@ -131,16 +131,52 @@ GMAIL_USER=you@gmail.com
 GMAIL_PASSWORD=xxxx xxxx xxxx xxxx   # Gmail App Password — not your account password
 RECIPIENT_EMAIL=you@example.com
 
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=AIza...
+GROQ_API_KEY=gsk_...                 # groq.com — free tier, no credit card needed
 
-LLM_MODEL=gpt-4o-mini
-LLM_MATCH_THRESHOLD=6               # Jobs scored below this (1–10) are skipped
+LLM_MODEL=groq/llama-3.3-70b-versatile
+LLM_FALLBACK_MODELS=groq/llama-3.1-8b-instant
+LLM_PARALLEL_WORKERS=6
+LLM_MATCH_THRESHOLD=7               # Jobs scored below this (1–10) are skipped
 ```
 
 Generate a Gmail App Password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
 (requires 2-Step Verification).
+
+### Switching LLM models
+
+The agent uses [LiteLLM](https://github.com/BerriAI/litellm) — switching providers requires **only `.env` changes, no code edits**.
+
+Set the API key for your chosen provider, then update `LLM_MODEL` (and optionally `LLM_FALLBACK_MODELS`).
+Keep Groq as the last fallback — it is always free and requires no credits.
+
+#### Free tier (no cost)
+
+| Provider | API key | `LLM_MODEL` |
+|---|---|---|
+| **Groq** (default) | `GROQ_API_KEY` at [groq.com](https://groq.com) | `groq/llama-3.3-70b-versatile` |
+| Groq fast fallback | same key | `groq/llama-3.1-8b-instant` |
+
+Groq free tier: 1,000 requests/day, 30 RPM — sufficient for a full run of ~600 jobs.
+
+#### Paid models (higher quality)
+
+| Provider | API key | `LLM_MODEL` |
+|---|---|---|
+| **Anthropic Claude Sonnet** | `ANTHROPIC_API_KEY` at [platform.anthropic.com](https://platform.anthropic.com) | `claude-sonnet-4-6` |
+| Anthropic Claude Opus | same key | `claude-opus-4-8` |
+| **OpenAI** | `OPENAI_API_KEY` at [platform.openai.com](https://platform.openai.com) | `gpt-5.5` |
+| **Google Gemini** | `GEMINI_API_KEY` at [aistudio.google.com](https://aistudio.google.com) | `gemini/gemini-2.5-pro` |
+
+Example — Claude Sonnet as primary with Groq as free fallback:
+
+```dotenv
+ANTHROPIC_API_KEY=sk-ant-...
+GROQ_API_KEY=gsk_...
+
+LLM_MODEL=claude-sonnet-4-6
+LLM_FALLBACK_MODELS=claude-haiku-4-5-20251001,groq/llama-3.3-70b-versatile
+LLM_PARALLEL_WORKERS=6
+```
 
 ### Candidate profile (`PROFILE.md`)
 
@@ -219,3 +255,6 @@ platforms or across multiple runs is only ever emailed once.
 | No jobs found | Check `logs/job_agent.log` for selector errors; platform HTML may have changed |
 | LinkedIn returns 0 results | Increase `MIN_DELAY` / `MAX_DELAY`; LinkedIn aggressively detects bots |
 | Scheduled task fails silently | Task Scheduler → History; verify the working directory is set correctly |
+
+
+

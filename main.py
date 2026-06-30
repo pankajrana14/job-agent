@@ -2,13 +2,15 @@
 main.py – Orchestrator for the Germany AI/Robotics Job Search Automation.
 
 Run directly:
-    python main.py
+    python main.py                # full run: scrape + evaluate + email
+    python main.py --from-cache   # skip scraping, re-evaluate from scraped_cache.json
 
 Or via Windows Task Scheduler (see README.md for setup).
 
 Flow
 ----
 1. Scrape enabled platforms: LinkedIn, StepStone, BA Jobbörse (in sequence).
+   → Raw jobs saved to scraped_cache.json immediately after scraping.
 2. AI evaluation: each job is scored 1–10 by an LLM against PROFILE.md.
 3. Deduplicate matched jobs against jobs_database.json.
 4. Send structured email via Gmail SMTP.
@@ -16,8 +18,10 @@ Flow
 """
 
 import sys
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from config import (
     DATABASE_FILE,
@@ -29,6 +33,8 @@ from config import (
 from database import JobDatabase
 from email_sender import send_email
 from utils import get_current_datetime, setup_logging
+
+SCRAPE_CACHE_FILE = Path("scraped_cache.json")
 
 # Ensure logging is initialised before importing scrapers
 logger = setup_logging()
@@ -49,49 +55,69 @@ def _run_scraper(name: str, scraper_fn) -> list[dict]:
 
 
 def main() -> None:
+    from_cache = "--from-cache" in sys.argv
+
     start_time = datetime.now()
     logger.info("Job Agent started at %s", get_current_datetime())
 
-    # ------------------------------------------------------------------
-    # 1. Import scrapers here (after logging setup) to avoid circular issues
-    # ------------------------------------------------------------------
-    from scraper_linkedin  import scrape_linkedin
-    from scraper_stepstone import scrape_stepstone
-    from scraper_xing      import scrape_xing
-    from scraper_ba        import scrape_ba
-    from evaluator         import evaluate_jobs
+    from evaluator import evaluate_jobs
+    from config import LLM_MODEL, LLM_FALLBACK_MODELS, LLM_PARALLEL_WORKERS
+
+    logger.info(
+        "LLM config  model=%s  fallbacks=%s  workers=%d",
+        LLM_MODEL, LLM_FALLBACK_MODELS, LLM_PARALLEL_WORKERS,
+    )
 
     # ------------------------------------------------------------------
-    # 2. Scrape all enabled platforms
+    # 1. Scrape all enabled platforms  (or load from cache)
     # ------------------------------------------------------------------
-    raw_jobs: list[dict] = []
-
-    if LINKEDIN_ENABLED:
-        raw_jobs.extend(_run_scraper("LinkedIn", scrape_linkedin))
+    if from_cache:
+        if not SCRAPE_CACHE_FILE.exists():
+            logger.error(
+                "--from-cache specified but %s not found. Run without --from-cache first.",
+                SCRAPE_CACHE_FILE,
+            )
+            sys.exit(1)
+        raw_jobs = json.loads(SCRAPE_CACHE_FILE.read_text(encoding="utf-8"))
+        logger.info("Loaded %d jobs from cache (%s).", len(raw_jobs), SCRAPE_CACHE_FILE)
     else:
-        logger.info("LinkedIn scraper disabled (LINKEDIN_ENABLED=False).")
+        from scraper_linkedin  import scrape_linkedin
+        from scraper_stepstone import scrape_stepstone
+        from scraper_xing      import scrape_xing
+        from scraper_ba        import scrape_ba
 
-    if STEPSTONE_ENABLED:
-        raw_jobs.extend(_run_scraper("StepStone", scrape_stepstone))
-    else:
-        logger.info("StepStone scraper disabled (STEPSTONE_ENABLED=False).")
+        raw_jobs: list[dict] = []
 
-    if XING_ENABLED:
-        raw_jobs.extend(_run_scraper("Xing", scrape_xing))
-    else:
-        logger.info("Xing scraper disabled (XING_ENABLED=False).")
+        if LINKEDIN_ENABLED:
+            raw_jobs.extend(_run_scraper("LinkedIn", scrape_linkedin))
+        else:
+            logger.info("LinkedIn scraper disabled (LINKEDIN_ENABLED=False).")
 
-    if BA_ENABLED:
-        raw_jobs.extend(_run_scraper("BA Jobbörse", scrape_ba))
-    else:
-        logger.info("BA Jobbörse scraper disabled (BA_ENABLED=False).")
+        if STEPSTONE_ENABLED:
+            raw_jobs.extend(_run_scraper("StepStone", scrape_stepstone))
+        else:
+            logger.info("StepStone scraper disabled (STEPSTONE_ENABLED=False).")
 
-    logger.info("Total raw candidates across all platforms: %d", len(raw_jobs))
+        if XING_ENABLED:
+            raw_jobs.extend(_run_scraper("Xing", scrape_xing))
+        else:
+            logger.info("Xing scraper disabled (XING_ENABLED=False).")
+
+        if BA_ENABLED:
+            raw_jobs.extend(_run_scraper("BA Jobbörse", scrape_ba))
+        else:
+            logger.info("BA Jobbörse scraper disabled (BA_ENABLED=False).")
+
+        logger.info("Total raw candidates across all platforms: %d", len(raw_jobs))
+
+        # Save cache immediately so a failed evaluation can be re-run cheaply.
+        SCRAPE_CACHE_FILE.write_text(
+            json.dumps(raw_jobs, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        logger.info("Scrape cache saved to %s.", SCRAPE_CACHE_FILE)
 
     # ------------------------------------------------------------------
-    # 3. AI evaluation — replaces all keyword filters
-    #    Each job is sent to the LLM with the candidate profile.
-    #    Only jobs the LLM approves (score >= LLM_MATCH_THRESHOLD) continue.
+    # 2. AI evaluation
     # ------------------------------------------------------------------
     logger.info("=" * 60)
     logger.info("Starting AI evaluation pass")
@@ -100,10 +126,10 @@ def main() -> None:
         ai_matched = evaluate_jobs(raw_jobs)
     except Exception as exc:
         logger.error("AI evaluation crashed: %s – falling back to all raw jobs.", exc)
-        ai_matched = raw_jobs   # safe fallback: don't drop everything on API error
+        ai_matched = raw_jobs
 
     # ------------------------------------------------------------------
-    # 4. Deduplication against database
+    # 3. Deduplication against database
     # ------------------------------------------------------------------
     db = JobDatabase(DATABASE_FILE)
 
@@ -120,7 +146,6 @@ def main() -> None:
         else:
             new_jobs.append(job)
 
-    # Cross-query deduplication (same job from different queries)
     seen: set[str] = set()
     deduplicated: list[dict] = []
     for job in new_jobs:
@@ -135,13 +160,13 @@ def main() -> None:
     )
 
     # ------------------------------------------------------------------
-    # 5. Send email
+    # 4. Send email
     # ------------------------------------------------------------------
     logger.info("Sending email update (%d new jobs) …", len(deduplicated))
     success = send_email(deduplicated)
 
     # ------------------------------------------------------------------
-    # 6. Persist to database (only after successful email)
+    # 5. Persist to database (only after successful email)
     # ------------------------------------------------------------------
     if success and deduplicated:
         db.add_jobs_batch(deduplicated)

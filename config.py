@@ -9,10 +9,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---------------------------------------------------------------------------
-# LLM evaluation (LiteLLM + Groq)
+# LLM evaluation (LiteLLM)
 # ---------------------------------------------------------------------------
-LLM_MODEL: str           = os.getenv("LLM_MODEL", "anthropic/claude-opus-4.6-20260204")
-LLM_MATCH_THRESHOLD: int = int(os.getenv("LLM_MATCH_THRESHOLD", "6"))
+LLM_MODEL: str           = os.getenv("LLM_MODEL", "groq/llama-3.3-70b-versatile")
+LLM_MATCH_THRESHOLD: int = int(os.getenv("LLM_MATCH_THRESHOLD", "7"))
+# Groq free tier: 30 RPM, 12K TPM. At ~2K tokens/request, 6 workers saturates TPM safely.
+LLM_PARALLEL_WORKERS: int = max(1, int(os.getenv("LLM_PARALLEL_WORKERS", "6")))
 
 # Fallback models tried in order if the primary model fails (rate limit / auth error).
 # Comma-separated list of LiteLLM model strings.
@@ -20,7 +22,7 @@ LLM_FALLBACK_MODELS: list[str] = [
     m.strip()
     for m in os.getenv(
         "LLM_FALLBACK_MODELS",
-        "openai/gpt-5.4,gemini/gemini-3.1-pro-preview",
+        "groq/llama-3.1-8b-instant",
     ).split(",")
     if m.strip()
 ]
