@@ -14,7 +14,7 @@ load_dotenv()
 LLM_MODEL: str           = os.getenv("LLM_MODEL", "groq/llama-3.3-70b-versatile")
 LLM_MATCH_THRESHOLD: int = int(os.getenv("LLM_MATCH_THRESHOLD", "7"))
 # Groq free tier: 30 RPM, 12K TPM. At ~2K tokens/request, 6 workers saturates TPM safely.
-LLM_PARALLEL_WORKERS: int = max(1, int(os.getenv("LLM_PARALLEL_WORKERS", "6")))
+LLM_PARALLEL_WORKERS: int = max(1, int(os.getenv("LLM_PARALLEL_WORKERS", "32")))
 
 # Fallback models tried in order if the primary model fails (rate limit / auth error).
 # Comma-separated list of LiteLLM model strings.
@@ -26,6 +26,12 @@ LLM_FALLBACK_MODELS: list[str] = [
     ).split(",")
     if m.strip()
 ]
+
+# Portkey AI gateway (https://portkey.ai) — routes to Claude/GPT/etc via a
+# virtual key. Set LLM_MODEL or an entry in LLM_FALLBACK_MODELS to
+# "portkey/@<virtual-key-slug>/<provider>/<model>" to use it.
+PORTKEY_API_KEY: str = os.getenv("PORTKEY_API_KEY", "")
+PORTKEY_API_BASE: str = "https://api.portkey.ai/v1"
 
 # ---------------------------------------------------------------------------
 # Email / SMTP

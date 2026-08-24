@@ -26,6 +26,8 @@ from config import (
     LLM_MATCH_THRESHOLD,
     LLM_MODEL,
     LLM_PARALLEL_WORKERS,
+    PORTKEY_API_BASE,
+    PORTKEY_API_KEY,
     SEARCH_COUNTRY,
 )
 
@@ -223,6 +225,15 @@ def _build_completion_params(model: str, user_message: str) -> dict:
         "response_format": {"type": "json_object"},
         "max_tokens": 800,
     }
+
+    # Portkey gateway: "portkey/@<slug>/<provider>/<model>" → route through
+    # Portkey's OpenAI-compatible endpoint, auth via x-portkey-api-key header
+    # (Portkey ignores the Authorization header litellm normally sends).
+    if model.startswith("portkey/"):
+        params["model"] = "openai/" + model[len("portkey/"):]
+        params["api_base"] = PORTKEY_API_BASE
+        params["api_key"] = PORTKEY_API_KEY or "unused"
+        params["extra_headers"] = {"x-portkey-api-key": PORTKEY_API_KEY}
 
     params["temperature"] = 0.1
 
