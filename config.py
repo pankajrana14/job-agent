@@ -27,12 +27,6 @@ LLM_FALLBACK_MODELS: list[str] = [
     if m.strip()
 ]
 
-# Portkey AI gateway (https://portkey.ai) — routes to Claude/GPT/etc via a
-# virtual key. Set LLM_MODEL or an entry in LLM_FALLBACK_MODELS to
-# "portkey/@<virtual-key-slug>/<provider>/<model>" to use it.
-PORTKEY_API_KEY: str = os.getenv("PORTKEY_API_KEY", "")
-PORTKEY_API_BASE: str = "https://api.portkey.ai/v1"
-
 # ---------------------------------------------------------------------------
 # Email / SMTP
 # ---------------------------------------------------------------------------

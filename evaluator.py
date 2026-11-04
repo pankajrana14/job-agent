@@ -26,8 +26,6 @@ from config import (
     LLM_MATCH_THRESHOLD,
     LLM_MODEL,
     LLM_PARALLEL_WORKERS,
-    PORTKEY_API_BASE,
-    PORTKEY_API_KEY,
     SEARCH_COUNTRY,
 )
 
@@ -226,14 +224,23 @@ def _build_completion_params(model: str, user_message: str) -> dict:
         "max_tokens": 800,
     }
 
-    # Portkey gateway: "portkey/@<slug>/<provider>/<model>" → route through
-    # Portkey's OpenAI-compatible endpoint, auth via x-portkey-api-key header
-    # (Portkey ignores the Authorization header litellm normally sends).
-    if model.startswith("portkey/"):
-        params["model"] = "openai/" + model[len("portkey/"):]
-        params["api_base"] = PORTKEY_API_BASE
-        params["api_key"] = PORTKEY_API_KEY or "unused"
-        params["extra_headers"] = {"x-portkey-api-key": PORTKEY_API_KEY}
+    # Direct Claude API ("anthropic/<model>", key from ANTHROPIC_API_KEY).
+    # Current Claude models reject `temperature` and forced tool_choice (which
+    # LiteLLM uses to emulate response_format), and always think, so drop both
+    # and leave headroom for thinking tokens. The system prompt already asks
+    # for a bare JSON object and _extract_json_object tolerates stray text.
+    # The system prompt (profile + rubric, ~2.8K tokens) is identical for every
+    # job, so mark it for prompt caching: later calls read it at 10% of the
+    # input price instead of paying full price each time.
+    if model.startswith("anthropic/"):
+        params["messages"][0]["content"] = [{
+            "type": "text",
+            "text": _SYSTEM_PROMPT,
+            "cache_control": {"type": "ephemeral"},
+        }]
+        params.pop("response_format", None)
+        params["max_tokens"] = 4000
+        return params
 
     params["temperature"] = 0.1
 
@@ -374,8 +381,12 @@ def evaluate_jobs(jobs: list[dict], delay_between: float = 1.0) -> list[dict]:
             if item[0] < total:
                 time.sleep(delay_between)
     else:
+        # Score the first job on its own so its response writes the prompt
+        # cache; requests sent in parallel before that would all miss it.
+        items = list(enumerate(jobs, start=1))
+        evaluated = [_evaluate_one(items[0])]
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
-            evaluated = list(executor.map(_evaluate_one, enumerate(jobs, start=1)))
+            evaluated += list(executor.map(_evaluate_one, items[1:]))
 
     for idx, job, result in evaluated:
         title   = job.get("title", "?")

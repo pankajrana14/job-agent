@@ -162,7 +162,8 @@ def main():
 
     print(f"{'═'*70}")
     print(f"  Results: {_c(_GREEN, str(passed))} matched / {len(TEST_JOBS)} evaluated")
-    print(f"  Expected: jobs 1, 2, 4 = match  |  jobs 3, 5 = reject")
+    # Job 4 is a Werkstudent role, which PROFILE.md excludes, so it should be rejected.
+    print(f"  Expected: jobs 1, 2 = match  |  jobs 3, 4, 5 = reject")
     print(f"{'═'*70}\n")
 
 
